@@ -1,0 +1,53 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "mein video",
+      "intents": [
+        {
+          "name": "PlayVideoIntent",
+          "slots": [],
+          "samples": [
+            "spiele video ab",
+            "starte video",
+            "zeige video",
+            "starte den stream",
+            "spiele den stream ab",
+            "zeige den stream",
+            "starte fernsehen",
+            "zeige fernsehen",
+            "fernsehen",
+            "video abspielen",
+            "stream starten",
+            "live stream",
+            "starte live stream",
+            "zeige live stream"
+          ]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PauseIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ResumeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "myvideo-alexa-skill",
+  "version": "1.0.0",
+  "description": "Alexa Skill zum Abspielen von Fritz!Box DVB-C Streams auf Echo Show",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "stream": "bash scripts/start-stream.sh",
+    "tunnel": "bash scripts/start-ngrok.sh"
+  },
+  "dependencies": {
+    "ask-sdk-core": "^2.14.0",
+    "ask-sdk-express-adapter": "^2.14.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "type": "APL",
+  "version": "2024.2",
+  "theme": "dark",
+  "mainTemplate": {
+    "parameters": ["videoData"],
+    "items": [
+      {
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "items": [
+          {
+            "type": "Video",
+            "id": "myVideoPlayer",
+            "width": "100vw",
+            "height": "100vh",
+            "scale": "best-fill",
+            "autoplay": true,
+            "audioTrack": "foreground",
+            "source": "${videoData.properties.videoUrl}",
+            "onEnd": [
+              {
+                "type": "SpeakItem",
+                "componentId": "statusText"
+              }
+            ],
+            "onTrackFail": [
+              {
+                "type": "SetValue",
+                "componentId": "statusText",
+                "property": "text",
+                "value": "Stream nicht verfuegbar"
+              }
+            ]
+          },
+          {
+            "type": "Container",
+            "position": "absolute",
+            "bottom": "2vh",
+            "left": "2vw",
+            "right": "2vw",
+            "direction": "row",
+            "justifyContent": "spaceBetween",
+            "alignItems": "center",
+            "opacity": 0.8,
+            "items": [
+              {
+                "type": "Text",
+                "id": "statusText",
+                "text": "${videoData.properties.title}",
+                "color": "white",
+                "fontSize": "24dp",
+                "fontWeight": "bold"
+              },
+              {
+                "type": "TouchWrapper",
+                "onPress": [
+                  {
+                    "type": "ControlMedia",
+                    "componentId": "myVideoPlayer",
+                    "command": "pause"
+                  }
+                ],
+                "items": [
+                  {
+                    "type": "Frame",
+                    "backgroundColor": "rgba(255,255,255,0.3)",
+                    "borderRadius": "8dp",
+                    "padding": "8dp",
+                    "items": [
+                      {
+                        "type": "Text",
+                        "text": "⏸ Pause",
+                        "color": "white",
+                        "fontSize": "20dp"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
