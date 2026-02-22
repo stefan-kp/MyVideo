@@ -1,0 +1,40 @@
+{
+  "liveTV": {
+    "ARD": {
+      "Das_Erste": "https://daserste-live.ard-mcdn.de/daserste/live/hls/de/master.m3u8",
+      "ONE": "https://mcdn-one.ard.de/ardone/hls/master.m3u8",
+      "ARD_alpha": "https://mcdn.br.de/br/fs/ard_alpha/hls/de/master.m3u8",
+      "Tagesschau24": "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8"
+    },
+    "ZDF": {
+      "ZDF_HD": "https://zdf-hls-15.akamaized.net/hls/live/2016498/de/high/master.m3u8",
+      "ZDFneo_HD": "https://zdf-hls-16.akamaized.net/hls/live/2016499/de/high/master.m3u8",
+      "ZDFinfo_HD": "https://zdf-hls-17.akamaized.net/hls/live/2016500/de/high/master.m3u8",
+      "3sat_HD": "https://zdf-hls-18.akamaized.net/hls/live/2016501/dach/high/master.m3u8",
+      "Phoenix_HD": "https://zdf-hls-19.akamaized.net/hls/live/2016502/de/high/master.m3u8"
+    }
+  },
+  "geoNotes": {
+    "ZDF_*": "Geo-blocked: nur DE (nicht AT). 3sat nutzt /dach/ und funktioniert in AT.",
+    "ORF": "ORF 1/2 nutzen seit 2021 Widevine DRM (DASH) - kein HLS moeglich. ORF 3/Sport+ ebenfalls nicht mehr per HLS erreichbar."
+  },
+  "mediatheks": {
+    "description": "APIs und JSON-Datenquellen fuer Mediathekinhalte",
+    "sources": [
+      {
+        "name": "MediathekViewWeb API (unofficial)",
+        "baseUrl": "https://mediathekviewweb.de/api/query",
+        "info": "Community-API - liefert JSON-Ergebnisse zu Mediathekinhalten und Videolinks.",
+        "notes": "POST JSON-Body mit Suchparametern, Ergebnis enthaelt Metadaten + Video-URLs",
+        "exampleQueryBody": {
+          "queries": [
+            {
+              "fields": ["topic"],
+              "query": "<Suchbegriff>"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

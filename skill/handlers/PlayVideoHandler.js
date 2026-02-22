@@ -1,7 +1,7 @@
 const Alexa = require('ask-sdk-core');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const STREAM_PATH = '/stream/index.m3u8';
+const mediathek = require('../../lib/mediathek');
+const { formatResultForSpeech } = require('../../lib/speechUtils');
+const { renderNewsList } = require('../../lib/aplHelper');
 
 const PlayVideoHandler = {
   canHandle(handlerInput) {
@@ -11,57 +11,44 @@ const PlayVideoHandler = {
        Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.ResumeIntent')
     );
   },
-  handle(handlerInput) {
-    const streamUrl = `${BASE_URL}${STREAM_PATH}`;
-    console.log(`Starte Video-Stream: ${streamUrl}`);
+  async handle(handlerInput) {
+    console.log('PlayVideoIntent -> ZIB-Suche als Fallback');
 
-    const { requestEnvelope } = handlerInput;
-    const interfaces = requestEnvelope.context.System.device.supportedInterfaces;
-
-    // Primaer: VideoApp.Launch Directive (bester HLS-Support)
-    if (interfaces && interfaces['VideoApp']) {
-      console.log('Verwende VideoApp.Launch Directive');
+    let results;
+    try {
+      results = await mediathek.search('ZIB');
+    } catch (err) {
+      console.error('PlayVideo ZIB search error:', err.message);
       return handlerInput.responseBuilder
-        .addVideoAppLaunchDirective(streamUrl, 'MyVideo', 'Live TV Stream')
+        .speak('Sage einen Sendernamen, zum Beispiel: spiele Tagesschau 24.')
+        .reprompt('Welchen Sender moechtest du sehen?')
+        .withShouldEndSession(false)
         .getResponse();
     }
 
-    // Fallback: APL Video Component
-    if (interfaces && interfaces['Alexa.Presentation.APL']) {
-      console.log('Verwende APL Video Fallback');
-      const aplTemplate = require('../apl/VideoTemplate.json');
-
+    if (!results || results.length === 0) {
       return handlerInput.responseBuilder
-        .addDirective({
-          type: 'Alexa.Presentation.APL.RenderDocument',
-          token: 'videoToken',
-          document: aplTemplate,
-          datasources: {
-            videoData: {
-              type: 'object',
-              properties: {
-                videoUrl: streamUrl,
-                title: 'MyVideo - Live TV'
-              }
-            }
-          }
-        })
-        .addDirective({
-          type: 'Alexa.Presentation.APL.ExecuteCommands',
-          token: 'videoToken',
-          commands: [
-            {
-              type: 'ControlMedia',
-              componentId: 'myVideoPlayer',
-              command: 'play'
-            }
-          ]
-        })
+        .speak('Sage einen Sendernamen oder suche in der Mediathek.')
+        .reprompt('Welchen Sender moechtest du sehen?')
+        .withShouldEndSession(false)
         .getResponse();
     }
+
+    const top = results.slice(0, 3);
+
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+    sessionAttributes.mediathekResults = top;
+    handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+
+    const lines = top.map((r, i) => formatResultForSpeech(r, i));
+    const speech = `Aktuelle Nachrichten: ${lines.join('. ')}. Welche Nummer, oder sage einen Sender.`;
+
+    renderNewsList(handlerInput, top, 'Aktuelle Nachrichten');
 
     return handlerInput.responseBuilder
-      .speak('Dieses Geraet unterstuetzt leider keine Videowiedergabe.')
+      .speak(speech)
+      .reprompt('Sage eine Nummer oder einen Sender.')
+      .withShouldEndSession(false)
       .getResponse();
   }
 };

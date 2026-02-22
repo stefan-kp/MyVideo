@@ -1,0 +1,125 @@
+{
+  "type": "APL",
+  "version": "2024.2",
+  "theme": "dark",
+  "mainTemplate": {
+    "parameters": ["channelData"],
+    "items": [
+      {
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "paddingLeft": "40dp",
+        "paddingRight": "40dp",
+        "paddingTop": "30dp",
+        "paddingBottom": "20dp",
+        "items": [
+          {
+            "type": "Text",
+            "text": "Sender",
+            "color": "white",
+            "fontSize": "32dp",
+            "fontWeight": "bold",
+            "paddingBottom": "20dp"
+          },
+          {
+            "type": "Sequence",
+            "width": "100%",
+            "grow": 1,
+            "scrollDirection": "vertical",
+            "data": "${channelData.properties.channels}",
+            "items": [
+              {
+                "type": "TouchWrapper",
+                "onPress": [
+                  {
+                    "type": "SendEvent",
+                    "arguments": ["selectChannel", "${data.id}"]
+                  }
+                ],
+                "items": [
+                  {
+                    "type": "Frame",
+                    "backgroundColor": "rgba(255,255,255,0.05)",
+                    "borderRadius": "12dp",
+                    "paddingLeft": "16dp",
+                    "paddingRight": "20dp",
+                    "paddingTop": "12dp",
+                    "paddingBottom": "12dp",
+                    "marginBottom": "8dp",
+                    "items": [
+                      {
+                        "type": "Container",
+                        "direction": "row",
+                        "alignItems": "center",
+                        "items": [
+                          {
+                            "type": "Image",
+                            "source": "${data.logo}",
+                            "width": "60dp",
+                            "height": "60dp",
+                            "borderRadius": "8dp",
+                            "scale": "best-fit",
+                            "when": "${data.logo != ''}"
+                          },
+                          {
+                            "type": "Frame",
+                            "width": "60dp",
+                            "height": "60dp",
+                            "borderRadius": "8dp",
+                            "backgroundColor": "rgba(255,255,255,0.15)",
+                            "justifyContent": "center",
+                            "alignItems": "center",
+                            "when": "${data.logo == ''}",
+                            "items": [
+                              {
+                                "type": "Text",
+                                "text": "TV",
+                                "color": "#78909C",
+                                "fontSize": "20dp",
+                                "textAlign": "center"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Container",
+                            "paddingLeft": "16dp",
+                            "grow": 1,
+                            "items": [
+                              {
+                                "type": "Text",
+                                "text": "${data.name}",
+                                "color": "white",
+                                "fontSize": "24dp",
+                                "fontWeight": "bold"
+                              },
+                              {
+                                "type": "Text",
+                                "text": "${data.group}",
+                                "color": "#78909C",
+                                "fontSize": "18dp",
+                                "paddingTop": "2dp"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "text": "Tippe auf einen Sender oder sage seinen Namen.",
+            "color": "#78909C",
+            "fontSize": "16dp",
+            "paddingTop": "10dp",
+            "textAlign": "center"
+          }
+        ]
+      }
+    ]
+  }
+}

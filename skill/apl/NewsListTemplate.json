@@ -1,0 +1,126 @@
+{
+  "type": "APL",
+  "version": "2024.2",
+  "theme": "dark",
+  "mainTemplate": {
+    "parameters": ["newsData"],
+    "items": [
+      {
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "paddingLeft": "40dp",
+        "paddingRight": "40dp",
+        "paddingTop": "30dp",
+        "paddingBottom": "20dp",
+        "items": [
+          {
+            "type": "Text",
+            "text": "${newsData.properties.title}",
+            "color": "white",
+            "fontSize": "32dp",
+            "fontWeight": "bold",
+            "paddingBottom": "20dp"
+          },
+          {
+            "type": "Sequence",
+            "width": "100%",
+            "grow": 1,
+            "scrollDirection": "vertical",
+            "data": "${newsData.properties.results}",
+            "numbered": true,
+            "items": [
+              {
+                "type": "TouchWrapper",
+                "onPress": [
+                  {
+                    "type": "SendEvent",
+                    "arguments": ["selectResult", "${data.index}"]
+                  }
+                ],
+                "items": [
+                  {
+                    "type": "Frame",
+                    "backgroundColor": "${data.index % 2 == 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}",
+                    "borderRadius": "12dp",
+                    "paddingLeft": "20dp",
+                    "paddingRight": "20dp",
+                    "paddingTop": "14dp",
+                    "paddingBottom": "14dp",
+                    "marginBottom": "8dp",
+                    "items": [
+                      {
+                        "type": "Container",
+                        "direction": "row",
+                        "alignItems": "center",
+                        "items": [
+                          {
+                            "type": "Text",
+                            "text": "${ordinal}",
+                            "color": "#4FC3F7",
+                            "fontSize": "28dp",
+                            "fontWeight": "bold",
+                            "width": "40dp"
+                          },
+                          {
+                            "type": "Container",
+                            "grow": 1,
+                            "paddingLeft": "12dp",
+                            "items": [
+                              {
+                                "type": "Text",
+                                "text": "${data.title}",
+                                "color": "white",
+                                "fontSize": "22dp",
+                                "fontWeight": "bold",
+                                "maxLines": 2
+                              },
+                              {
+                                "type": "Container",
+                                "direction": "row",
+                                "paddingTop": "4dp",
+                                "items": [
+                                  {
+                                    "type": "Text",
+                                    "text": "${data.channel}",
+                                    "color": "#B0BEC5",
+                                    "fontSize": "18dp"
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "text": " · ${data.time}",
+                                    "color": "#78909C",
+                                    "fontSize": "18dp"
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "text": " · ${data.duration}",
+                                    "color": "#78909C",
+                                    "fontSize": "18dp",
+                                    "when": "${data.duration != ''}"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "text": "Tippe auf einen Eintrag oder sage eine Nummer.",
+            "color": "#78909C",
+            "fontSize": "16dp",
+            "paddingTop": "10dp",
+            "textAlign": "center"
+          }
+        ]
+      }
+    ]
+  }
+}

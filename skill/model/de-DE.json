@@ -4,6 +4,100 @@
       "invocationName": "mein video",
       "intents": [
         {
+          "name": "PlayNewsIntent",
+          "slots": [
+            {
+              "name": "newsSource",
+              "type": "NEWS_SOURCE"
+            }
+          ],
+          "samples": [
+            "nachrichten",
+            "zeige nachrichten",
+            "aktuelle nachrichten",
+            "{newsSource}",
+            "zeige {newsSource}",
+            "spiele {newsSource}",
+            "starte {newsSource}",
+            "was gibt es neues",
+            "gibt es neue nachrichten",
+            "nachrichten bitte",
+            "news"
+          ]
+        },
+        {
+          "name": "PlayChannelIntent",
+          "slots": [
+            {
+              "name": "channel",
+              "type": "CHANNEL_NAME"
+            }
+          ],
+          "samples": [
+            "schalte auf {channel}",
+            "schalte {channel} ein",
+            "ich moechte {channel} sehen",
+            "zeige mir {channel}",
+            "mach {channel} an",
+            "{channel} einschalten",
+            "wechsle zu {channel}",
+            "wechsle auf {channel}",
+            "sender {channel}",
+            "live {channel}"
+          ]
+        },
+        {
+          "name": "SearchMediathekIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "suche {query} in der mediathek",
+            "suche nach {query}",
+            "finde {query}",
+            "mediathek {query}",
+            "suche {query}",
+            "gibt es {query} in der mediathek",
+            "zeige {query} aus der mediathek"
+          ]
+        },
+        {
+          "name": "PlayMediathekResultIntent",
+          "slots": [
+            {
+              "name": "resultNumber",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "spiele nummer {resultNumber}",
+            "nummer {resultNumber}",
+            "starte nummer {resultNumber}",
+            "zeige nummer {resultNumber}",
+            "{resultNumber}",
+            "die {resultNumber}",
+            "nimm nummer {resultNumber}",
+            "spiele ergebnis {resultNumber}"
+          ]
+        },
+        {
+          "name": "ListChannelsIntent",
+          "slots": [],
+          "samples": [
+            "welche sender gibt es",
+            "was kann ich sehen",
+            "zeige sender",
+            "senderliste",
+            "welche kanaele gibt es",
+            "welche programme gibt es",
+            "was gibt es zu sehen",
+            "liste sender auf"
+          ]
+        },
+        {
           "name": "PlayVideoIntent",
           "slots": [],
           "samples": [
@@ -46,6 +140,84 @@
         {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []
+        }
+      ],
+      "types": [
+        {
+          "name": "CHANNEL_NAME",
+          "values": [
+            {
+              "name": {
+                "value": "Das Erste",
+                "synonyms": ["ARD", "Erstes", "Erstes Programm", "ARD Das Erste"]
+              }
+            },
+            {
+              "name": {
+                "value": "ONE",
+                "synonyms": ["ARD ONE", "Eins Festival"]
+              }
+            },
+            {
+              "name": {
+                "value": "ARD alpha",
+                "synonyms": ["Alpha", "BR Alpha"]
+              }
+            },
+            {
+              "name": {
+                "value": "Tagesschau24",
+                "synonyms": ["Tagesschau 24"]
+              }
+            },
+            {
+              "name": {
+                "value": "ZDF",
+                "synonyms": ["ZDF HD", "Zweites", "Zweites Programm"]
+              }
+            },
+            {
+              "name": {
+                "value": "ZDF neo",
+                "synonyms": ["Neo", "ZDFneo"]
+              }
+            },
+            {
+              "name": {
+                "value": "ZDF info",
+                "synonyms": ["ZDFinfo", "ZDF Information"]
+              }
+            },
+            {
+              "name": {
+                "value": "3sat",
+                "synonyms": ["Drei Sat", "Dreisat"]
+              }
+            },
+            {
+              "name": {
+                "value": "Phoenix",
+                "synonyms": ["Phoenix HD"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEWS_SOURCE",
+          "values": [
+            {
+              "name": {
+                "value": "ZIB",
+                "synonyms": ["ZIB 1", "ZIB 2", "ZIB Nacht", "die ZIB", "Zeit im Bild"]
+              }
+            },
+            {
+              "name": {
+                "value": "Tagesschau",
+                "synonyms": ["Tagesschau live", "die Tagesschau"]
+              }
+            }
+          ]
         }
       ]
     }

@@ -83,22 +83,27 @@ echo "Starte FFmpeg... (Ctrl+C zum Beenden)"
 echo ""
 
 # FFmpeg: RTSP (SAT>IP) -> HLS
-# -rtsp_transport tcp = TCP statt UDP (stabiler hinter NAT/Firewall)
-# -c:v copy           = Video durchreichen (H.264 fuer HD Sender)
-# -c:a aac            = Audio zu AAC konvertieren (Echo Show Kompatibilitaet)
-# -hls_time 4         = 4-Sekunden Segmente
-# -hls_list_size 5    = Max 5 Segmente in Playlist
+# -rtsp_transport udp  = UDP Transport (SAT>IP Standard, Fritz!Box unterstuetzt kein TCP)
+# -map 0:v:0           = Nur den ersten Video-Stream nehmen
+# -map 0:a:0           = Nur den ersten Audio-Stream nehmen (ignoriert Teletext, EPG, etc.)
+# -c:v libx264         = Video zu H.264 Main Profile transkodieren (Echo Show kompatibel)
+# -c:a aac             = Audio zu AAC konvertieren (AC3 -> AAC fuer Echo Show)
+# -hls_time 6          = 6-Sekunden Segmente (stabiler fuer Streaming)
+# -hls_list_size 3     = 3 Segmente in Playlist
 # -hls_flags delete_segments = Alte Segmente loeschen
-#
-# Falls SD-Sender (MPEG-2), ersetze "-c:v copy" durch:
-#   -c:v libx264 -preset ultrafast -tune zerolatency -crf 23
 ffmpeg \
-  -rtsp_transport tcp \
+  -rtsp_transport udp \
+  -analyzeduration 5000000 \
+  -probesize 10000000 \
   -i "$FINAL_URL" \
-  -c:v copy \
+  -map 0:v:0 -map 0:a:0 \
+  -c:v libx264 -profile:v main -level 3.1 -preset veryfast -tune zerolatency \
+  -b:v 1500k -maxrate 1500k -bufsize 3000k \
+  -vf "scale=960:540" \
+  -g 50 -keyint_min 50 \
   -c:a aac -b:a 128k -ac 2 \
-  -hls_time 4 \
-  -hls_list_size 5 \
+  -hls_time 6 \
+  -hls_list_size 3 \
   -hls_flags delete_segments+append_list \
   -hls_segment_type mpegts \
   -hls_segment_filename "$STREAM_DIR/segment_%03d.ts" \
