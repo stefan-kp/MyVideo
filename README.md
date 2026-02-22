@@ -68,6 +68,7 @@ npm start
 | `JWT_SECRET` | Ja | Secret fuer Stream-Token-Absicherung (min. 32 Zeichen) |
 | `PORT` | Nein | Interner Server-Port (Standard: `3000`) |
 | `PORT_EXTERNAL` | Nein | Externer Port im Docker Compose (Standard: `3377`) |
+| `REGION` | Nein | `AT` oder `DE` - bestimmt regionale Inhalte (Standard: `AT`) |
 | `TUNNEL_TOKEN` | Nein | Cloudflare Tunnel Token - startet Tunnel automatisch im Container |
 | `SKILL_ID` | Nein | Alexa Skill ID (fuer Validierung) |
 
