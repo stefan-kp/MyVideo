@@ -17,12 +17,12 @@ const LaunchHandler = {
         .getResponse();
     }
 
-    // Auto-search for latest news (ZIB)
+    // Auto-search for latest news across ZIB, Tagesschau, heute etc.
     let results;
     try {
-      results = await mediathek.search('ZIB');
+      results = await mediathek.searchLatestNews();
     } catch (err) {
-      console.error('Launch ZIB search error:', err.message);
+      console.error('Launch news search error:', err.message);
       return handlerInput.responseBuilder
         .speak('Die Mediathek ist gerade nicht erreichbar. Sage einen Sendernamen, zum Beispiel: spiele Tagesschau 24, oder spiele 3sat.')
         .reprompt('Welchen Sender moechtest du sehen?')
@@ -38,15 +38,18 @@ const LaunchHandler = {
         .getResponse();
     }
 
-    const top = results.slice(0, 3);
+    const top = results.slice(0, 6);
 
     // Store in session for PlayMediathekResultHandler
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
     sessionAttributes.mediathekResults = top;
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
-    const lines = top.map((r, i) => formatResultForSpeech(r, i));
-    const speech = `Aktuelle Nachrichten: ${lines.join('. ')}. Welche Nummer, oder sage Tagesschau fuer den Livestream.`;
+    // Voice: nur die ersten 3 vorlesen, Display zeigt alle
+    const spokenResults = top.slice(0, 3);
+    const lines = spokenResults.map((r, i) => formatResultForSpeech(r, i));
+    const moreText = top.length > 3 ? ` ${top.length - 3} weitere auf dem Display.` : '';
+    const speech = `Aktuelle Nachrichten: ${lines.join('. ')}.${moreText} Welche Nummer, oder sage Tagesschau fuer den Livestream.`;
 
     renderNewsList(handlerInput, top, 'Aktuelle Nachrichten');
 

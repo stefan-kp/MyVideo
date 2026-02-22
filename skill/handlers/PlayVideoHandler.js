@@ -12,13 +12,13 @@ const PlayVideoHandler = {
     );
   },
   async handle(handlerInput) {
-    console.log('PlayVideoIntent -> ZIB-Suche als Fallback');
+    console.log('PlayVideoIntent -> Nachrichten-Suche als Fallback');
 
     let results;
     try {
-      results = await mediathek.search('ZIB');
+      results = await mediathek.searchLatestNews();
     } catch (err) {
-      console.error('PlayVideo ZIB search error:', err.message);
+      console.error('PlayVideo news search error:', err.message);
       return handlerInput.responseBuilder
         .speak('Sage einen Sendernamen, zum Beispiel: spiele Tagesschau 24.')
         .reprompt('Welchen Sender moechtest du sehen?')
@@ -34,14 +34,16 @@ const PlayVideoHandler = {
         .getResponse();
     }
 
-    const top = results.slice(0, 3);
+    const top = results.slice(0, 6);
 
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
     sessionAttributes.mediathekResults = top;
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
-    const lines = top.map((r, i) => formatResultForSpeech(r, i));
-    const speech = `Aktuelle Nachrichten: ${lines.join('. ')}. Welche Nummer, oder sage einen Sender.`;
+    const spokenResults = top.slice(0, 3);
+    const lines = spokenResults.map((r, i) => formatResultForSpeech(r, i));
+    const moreText = top.length > 3 ? ` ${top.length - 3} weitere auf dem Display.` : '';
+    const speech = `Aktuelle Nachrichten: ${lines.join('. ')}.${moreText} Welche Nummer, oder sage einen Sender.`;
 
     renderNewsList(handlerInput, top, 'Aktuelle Nachrichten');
 
