@@ -4,7 +4,7 @@ services:
     image: ghcr.io/stefan-kp/myvideo:latest
     env_file: .env
     ports:
-      - "3000:3000"
+      - "${PORT_EXTERNAL:-3377}:${PORT:-3000}"
     volumes:
       - logos:/app/public/logos
       - ./stream:/app/stream
