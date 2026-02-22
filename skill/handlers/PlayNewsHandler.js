@@ -5,6 +5,7 @@ const { generateStreamToken } = require('../../lib/auth');
 const { checkStreamAvailable } = require('../../lib/hlsProxy');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
 const { renderNewsList } = require('../../lib/aplHelper');
+const { searchCategory, CATEGORY_SLOT_MAP } = require('../../lib/mediathek');
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
@@ -26,6 +27,35 @@ const PlayNewsHandler = {
     }
 
     console.log(`PlayNewsIntent: source="${source || 'keine'}"`);
+
+    // Pruefen ob es eigentlich eine Kategorie ist (z.B. "Sport", "Kultur")
+    if (source) {
+      const categoryTitle = CATEGORY_SLOT_MAP[source.toLowerCase()];
+      if (categoryTitle) {
+        console.log(`PlayNewsIntent: Weiterleitung an Kategorie "${categoryTitle}"`);
+        try {
+          const data = await searchCategory(categoryTitle);
+          if (data.sections.length && data.sections[0].results.length) {
+            const results = data.sections[0].results;
+            const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+            sessionAttributes.mediathekResults = results;
+            handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+
+            const lines = results.map((r, i) => formatResultForSpeech(r, i));
+            const speech = `${lines.join('. ')}. Welche Nummer?`;
+            renderNewsList(handlerInput, data.sections, categoryTitle);
+
+            return handlerInput.responseBuilder
+              .speak(speech)
+              .reprompt('Sage eine Nummer.')
+              .withShouldEndSession(false)
+              .getResponse();
+          }
+        } catch (err) {
+          console.error('Category fallback error:', err.message);
+        }
+      }
+    }
 
     // Tagesschau = direct livestream
     if (source && source.toLowerCase().includes('tagesschau')) {

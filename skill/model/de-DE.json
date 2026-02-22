@@ -19,10 +19,12 @@
             "zeige {newsSource}",
             "spiele {newsSource}",
             "starte {newsSource}",
+            "{newsSource} nachrichten",
             "was gibt es neues",
             "gibt es neue nachrichten",
             "nachrichten bitte",
-            "news"
+            "news",
+            "nachrichten von {newsSource}"
           ]
         },
         {
@@ -106,12 +108,14 @@
             }
           ],
           "samples": [
-            "zeige {category}",
-            "{category}",
+            "kategorie {category}",
+            "zeige kategorie {category}",
             "was gibt es zu {category}",
-            "zeige mir {category}",
-            "starte {category}",
-            "spiele {category}"
+            "was gibt es bei {category}",
+            "zeige mir {category} nachrichten",
+            "{category} bitte",
+            "{category} zeigen",
+            "{category} abspielen"
           ]
         },
         {
