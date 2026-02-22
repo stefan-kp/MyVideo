@@ -9,6 +9,7 @@ Ein selbst gehosteter Alexa Skill fuer News-Junkies: Aktuelle Nachrichten aus de
 - **Mediathek-Suche** - Freitextsuche ueber alle oeffentlich-rechtlichen Mediatheken (ARD, ZDF, ORF, 3sat, Phoenix, ...)
 - **Live-TV** - Oeffentliche Livestreams von Das Erste, ZDF, ZDFneo, ZDFinfo, 3sat, Phoenix, Tagesschau24 und mehr
 - **Touch-Bedienung** - Ergebnislisten mit Senderlogos, antippen zum Abspielen, Schnellwahl-Buttons auf der Startseite
+- **AI-Zusammenfassung** - Untertitel der letzten Nachrichtensendungen werden per AI zusammengefasst und vorgelesen (optional, benoetigt OpenRouter API Key)
 - **Selbst gehostet** - Laeuft auf einem Raspberry Pi oder jedem Server mit Docker. Deine Daten, dein Server
 
 ## Warum ein eigener Skill?
@@ -70,6 +71,8 @@ npm start
 | `PORT_EXTERNAL` | Nein | Externer Port im Docker Compose (Standard: `3377`) |
 | `REGION` | Nein | `AT` oder `DE` - bestimmt regionale Inhalte (Standard: `AT`) |
 | `TUNNEL_TOKEN` | Nein | Cloudflare Tunnel Token - startet Tunnel automatisch im Container |
+| `OPENROUTER_API_KEY` | Nein | OpenRouter API Key fuer AI-Zusammenfassung |
+| `OPENROUTER_MODEL` | Nein | LLM Model fuer Zusammenfassung (Standard: `google/gemini-2.0-flash-001`) |
 | `SKILL_ID` | Nein | Alexa Skill ID (fuer Validierung) |
 
 ### Cloudflare Tunnel (empfohlen)
@@ -115,6 +118,7 @@ Der Skill ist sofort auf allen Alexa-Geraeten verfuegbar, die mit deinem Amazon-
 | "Suche \<Begriff\>" | Freitextsuche in der Mediathek |
 | "Nummer 1" / "Nummer 2" | Ergebnis aus der Liste abspielen |
 | "Schalte auf ZDF" | Live-TV Sender starten |
+| "Zusammenfassung" | AI-Zusammenfassung der letzten Nachrichten (benoetigt OpenRouter Key) |
 | "Welche Sender gibt es" | Alle verfuegbaren Sender anzeigen |
 
 Auf dem Echo Show koennen Ergebnisse auch per Touch angetippt werden.

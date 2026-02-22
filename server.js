@@ -10,6 +10,7 @@ const hlsProxy = require('./lib/hlsProxy');
 
 const LaunchHandler = require('./skill/handlers/LaunchHandler');
 const PlayNewsHandler = require('./skill/handlers/PlayNewsHandler');
+const SummaryHandler = require('./skill/handlers/SummaryHandler');
 const PlayChannelHandler = require('./skill/handlers/PlayChannelHandler');
 const SearchMediathekHandler = require('./skill/handlers/SearchMediathekHandler');
 const PlayMediathekResultHandler = require('./skill/handlers/PlayMediathekResultHandler');
@@ -76,6 +77,7 @@ const skillBuilder = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
     LaunchHandler,
     PlayNewsHandler,
+    SummaryHandler,
     PlayChannelHandler,
     SearchMediathekHandler,
     PlayMediathekResultHandler,

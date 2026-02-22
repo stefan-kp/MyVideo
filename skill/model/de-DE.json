@@ -138,6 +138,20 @@
           ]
         },
         {
+          "name": "SummaryIntent",
+          "slots": [],
+          "samples": [
+            "zusammenfassung",
+            "fasse zusammen",
+            "fasse die nachrichten zusammen",
+            "was ist passiert",
+            "nachrichten zusammenfassung",
+            "news zusammenfassung",
+            "was gibt es neues zusammengefasst",
+            "ueberblick"
+          ]
+        },
+        {
           "name": "AMAZON.StopIntent",
           "samples": []
         },
