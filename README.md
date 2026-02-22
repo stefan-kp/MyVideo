@@ -78,6 +78,21 @@ Der einfachste Weg, den Server oeffentlich erreichbar zu machen, ist ein [Cloudf
 
 ## Alexa Skill einrichten
 
+### Automatisch (empfohlen)
+
+```bash
+# ASK CLI installieren und konfigurieren (einmalig)
+npm install -g ask-cli
+ask configure
+
+# Skill erstellen oder aktualisieren
+./scripts/deploy-skill.sh
+```
+
+Das Script erkennt automatisch, ob bereits ein Skill existiert (`SKILL_ID` in `.env`). Falls nicht, wird ein neuer erstellt und die ID gespeichert.
+
+### Manuell
+
 1. Auf [developer.amazon.com/alexa/console/ask](https://developer.amazon.com/alexa/console/ask) einloggen
 2. **Create Skill** > Name: `Mein Video` > Language: `German (DE)` > Type: `Custom` > Hosting: `Provision your own`
 3. **Interaction Model** > JSON Editor > Inhalt von `skill/model/de-DE.json` einfuegen > **Save** > **Build Model**
@@ -92,10 +107,9 @@ Der Skill ist sofort auf allen Alexa-Geraeten verfuegbar, die mit deinem Amazon-
 | Befehl | Beschreibung |
 |--------|--------------|
 | "Alexa, oeffne mein Video" | Skill starten - zeigt aktuelle Nachrichten mit Schnellwahl |
-| "Nachrichten Oesterreich" | ZIB 1, ZIB 2, Spaet-ZIB, ZIB Flash |
-| "Nachrichten Deutschland" | Tagesschau, heute journal, heute Xpress |
-| "Sport" | Sportschau und mehr |
-| "Kultur" | Kulturzeit und mehr |
+| "Thema Nachrichten" | ZIB, Tagesschau je nach Region |
+| "Thema Sport" | Sport Aktuell, Bundesliga (AT) / Sportschau (DE) |
+| "Thema Kultur" | kulturMONTAG (AT) / Kulturzeit (DE) |
 | "Tagesschau" / "ZIB" | Bestimmte Nachrichtenquelle direkt |
 | "Suche \<Begriff\>" | Freitextsuche in der Mediathek |
 | "Nummer 1" / "Nummer 2" | Ergebnis aus der Liste abspielen |

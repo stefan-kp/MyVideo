@@ -1,0 +1,56 @@
+{
+  "manifest": {
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "sslCertificateType": "Wildcard",
+          "uri": "__BASE_URL__/alexa"
+        },
+        "interfaces": [
+          {
+            "type": "VIDEO_APP"
+          },
+          {
+            "supportedViewports": [
+              {
+                "maxHeight": 959,
+                "maxWidth": 1279,
+                "minHeight": 600,
+                "minWidth": 960,
+                "mode": "HUB",
+                "shape": "RECTANGLE"
+              },
+              {
+                "maxHeight": 1279,
+                "maxWidth": 1920,
+                "minHeight": 600,
+                "minWidth": 1280,
+                "mode": "HUB",
+                "shape": "RECTANGLE"
+              }
+            ],
+            "type": "ALEXA_PRESENTATION_APL"
+          }
+        ]
+      }
+    },
+    "manifestVersion": "1.0",
+    "publishingInformation": {
+      "category": "KNOWLEDGE_AND_TRIVIA",
+      "isAvailableWorldwide": true,
+      "locales": {
+        "de-DE": {
+          "description": "Live TV und Mediathek auf Echo Show - ARD, ZDF, ORF und mehr. Aktuelle Nachrichten, Sport und Kultur aus den oeffentlich-rechtlichen Mediatheken.",
+          "examplePhrases": [
+            "Alexa oeffne mein Video",
+            "Thema Sport",
+            "Suche Tatort in der Mediathek"
+          ],
+          "name": "MyVideo",
+          "summary": "Nachrichten, Sport und Kultur aus ARD, ZDF und ORF Mediatheken auf dem Echo Show"
+        }
+      },
+      "testingInstructions": "Server und Cloudflare Tunnel muessen laufen. Sage: Alexa, oeffne mein video."
+    }
+  }
+}
