@@ -172,7 +172,7 @@
               },
               {
                 "type": "Text",
-                "text": "Schnellwahl",
+                "text": "Sage: Thema ...",
                 "color": "white",
                 "fontSize": "26dp",
                 "fontWeight": "bold",
@@ -207,26 +207,12 @@
                         "width": "100%",
                         "items": [
                           {
-                            "type": "Container",
-                            "direction": "row",
-                            "alignItems": "center",
-                            "items": [
-                              {
-                                "type": "Text",
-                                "text": "${data.letter}",
-                                "color": "#4FC3F7",
-                                "fontSize": "28dp",
-                                "fontWeight": "bold",
-                                "width": "40dp"
-                              },
-                              {
-                                "type": "Text",
-                                "text": "${data.label}",
-                                "color": "white",
-                                "fontSize": "22dp",
-                                "fontWeight": "bold"
-                              }
-                            ]
+                            "type": "Text",
+                            "text": "${data.label}",
+                            "color": "white",
+                            "fontSize": "22dp",
+                            "fontWeight": "bold",
+                            "textAlign": "center"
                           }
                         ]
                       }

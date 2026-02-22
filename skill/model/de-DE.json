@@ -108,14 +108,13 @@
             }
           ],
           "samples": [
-            "kategorie {category}",
-            "zeige kategorie {category}",
+            "thema {category}",
+            "zeige thema {category}",
             "was gibt es zu {category}",
             "was gibt es bei {category}",
-            "zeige mir {category} nachrichten",
+            "zeige mir {category}",
             "{category} bitte",
-            "{category} zeigen",
-            "{category} abspielen"
+            "{category} zeigen"
           ]
         },
         {
