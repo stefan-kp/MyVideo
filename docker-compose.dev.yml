@@ -1,6 +1,6 @@
 services:
   myvideo:
-    image: ghcr.io/stefan-kp/myvideo:latest
+    build: .
     env_file: .env
     ports:
       - "${PORT_EXTERNAL:-3377}:${PORT:-3000}"

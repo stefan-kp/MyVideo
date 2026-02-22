@@ -7,7 +7,7 @@
 #
 # Verwendung:
 #   ./scripts/start-stream.sh                    # Verwendet .env STREAM_URL
-#   ./scripts/start-stream.sh "http://192.168.100.1/dvb/m3u/..."  # Direkte M3U-URL
+#   ./scripts/start-stream.sh "http://fritz.box/dvb/m3u/..."  # Direkte M3U-URL
 #   ./scripts/start-stream.sh "rtsp://..."       # Direkte RTSP-URL
 #
 # Voraussetzungen:
@@ -32,7 +32,7 @@ if [ -z "$INPUT_URL" ]; then
   echo "FEHLER: Keine Stream-URL angegeben!"
   echo ""
   echo "Verwendung:"
-  echo "  $0 \"http://192.168.100.1/dvb/m3u/51400_15030.m3u?sid=...\""
+  echo "  $0 \"http://fritz.box/dvb/m3u/51400_15030.m3u?sid=...\""
   echo ""
   echo "Oder STREAM_URL in .env setzen."
   exit 1
