@@ -2,6 +2,9 @@ const Alexa = require('ask-sdk-core');
 const channels = require('../../lib/channels');
 const { generateStreamToken } = require('../../lib/auth');
 const { checkStreamAvailable } = require('../../lib/hlsProxy');
+const { searchCategory } = require('../../lib/mediathek');
+const { formatResultForSpeech } = require('../../lib/speechUtils');
+const { renderNewsList } = require('../../lib/aplHelper');
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
@@ -19,6 +22,10 @@ const TouchEventHandler = {
 
     if (action === 'selectChannel') {
       return handleSelectChannel(handlerInput, args[1]);
+    }
+
+    if (action === 'selectCategory') {
+      return handleSelectCategory(handlerInput, args[1]);
     }
 
     console.log('TouchEvent: unbekannte Aktion', args);
@@ -86,6 +93,57 @@ async function handleSelectChannel(handlerInput, channelId) {
   return handlerInput.responseBuilder
     .speak(`Starte ${channel.name}.`)
     .addVideoAppLaunchDirective(streamUrl, channel.name, `${channel.group} - ${channel.name}`)
+    .getResponse();
+}
+
+const CATEGORY_MAP = {
+  nachrichten: 'Nachrichten AT',
+  sport: 'Sport',
+  kultur: 'Kultur',
+};
+
+async function handleSelectCategory(handlerInput, categoryId) {
+  const categoryTitle = CATEGORY_MAP[categoryId];
+  if (!categoryTitle) {
+    return handlerInput.responseBuilder
+      .speak('Kategorie nicht gefunden.')
+      .getResponse();
+  }
+
+  console.log(`Touch selectCategory: ${categoryId} -> ${categoryTitle}`);
+
+  let data;
+  try {
+    data = await searchCategory(categoryTitle);
+  } catch (err) {
+    console.error('Category touch search error:', err.message);
+    return handlerInput.responseBuilder
+      .speak('Die Mediathek ist gerade nicht erreichbar.')
+      .getResponse();
+  }
+
+  if (!data.sections.length || !data.sections[0].results.length) {
+    return handlerInput.responseBuilder
+      .speak(`Keine Ergebnisse fuer ${categoryTitle} gefunden.`)
+      .reprompt('Moechtest du etwas anderes suchen?')
+      .withShouldEndSession(false)
+      .getResponse();
+  }
+
+  const results = data.sections[0].results;
+  const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+  sessionAttributes.mediathekResults = results;
+  handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+
+  const lines = results.map((r, i) => formatResultForSpeech(r, i));
+  const speech = `${lines.join('. ')}. Welche Nummer?`;
+
+  renderNewsList(handlerInput, data.sections, categoryTitle);
+
+  return handlerInput.responseBuilder
+    .speak(speech)
+    .reprompt('Sage eine Nummer.')
+    .withShouldEndSession(false)
     .getResponse();
 }
 

@@ -1,0 +1,7 @@
+node_modules
+.git
+.claude
+.env
+stream/*.ts
+stream/*.m3u8
+*.pem

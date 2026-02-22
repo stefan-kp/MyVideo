@@ -1,7 +1,8 @@
 const Alexa = require('ask-sdk-core');
 const mediathek = require('../../lib/mediathek');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
-const { renderNewsList } = require('../../lib/aplHelper');
+const { renderLaunchScreen } = require('../../lib/aplHelper');
+const { getLogoUrlForChannel } = require('../../lib/channels');
 
 const LaunchHandler = {
   canHandle(handlerInput) {
@@ -17,10 +18,10 @@ const LaunchHandler = {
         .getResponse();
     }
 
-    // Auto-search for latest news across ZIB, Tagesschau, heute etc.
-    let results;
+    // Kategorisierte Nachrichten laden
+    let categorized;
     try {
-      results = await mediathek.searchLatestNews();
+      categorized = await mediathek.searchCategorizedNews();
     } catch (err) {
       console.error('Launch news search error:', err.message);
       return handlerInput.responseBuilder
@@ -30,7 +31,9 @@ const LaunchHandler = {
         .getResponse();
     }
 
-    if (!results || results.length === 0) {
+    const { sections } = categorized;
+
+    if (!sections || sections.length === 0) {
       return handlerInput.responseBuilder
         .speak('Ich habe gerade keine aktuellen Nachrichten gefunden. Sage einen Sendernamen, zum Beispiel: spiele Tagesschau 24.')
         .reprompt('Welchen Sender moechtest du sehen?')
@@ -38,20 +41,21 @@ const LaunchHandler = {
         .getResponse();
     }
 
-    const top = results.slice(0, 6);
+    // Alle Ergebnisse flach fuer Session speichern (Index-Zugriff per Touch/Sprache)
+    const allResults = sections.flatMap(s => s.results);
 
-    // Store in session for PlayMediathekResultHandler
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
-    sessionAttributes.mediathekResults = top;
+    sessionAttributes.mediathekResults = allResults;
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
-    // Voice: nur die ersten 3 vorlesen, Display zeigt alle
-    const spokenResults = top.slice(0, 3);
+    // Voice: die ersten 3 Ergebnisse vorlesen
+    const spokenResults = allResults.slice(0, 3);
     const lines = spokenResults.map((r, i) => formatResultForSpeech(r, i));
-    const moreText = top.length > 3 ? ` ${top.length - 3} weitere auf dem Display.` : '';
+    const moreText = allResults.length > 3 ? ` ${allResults.length - 3} weitere auf dem Display.` : '';
     const speech = `Aktuelle Nachrichten: ${lines.join('. ')}.${moreText} Welche Nummer, oder sage Tagesschau fuer den Livestream.`;
 
-    renderNewsList(handlerInput, top, 'Aktuelle Nachrichten');
+    const orfLogo = getLogoUrlForChannel('ORF');
+    renderLaunchScreen(handlerInput, sections, orfLogo);
 
     return handlerInput.responseBuilder
       .speak(speech)

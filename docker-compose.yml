@@ -1,11 +1,12 @@
 services:
   myvideo:
     build: .
+    image: ghcr.io/stefan-kp/myvideo:latest
     env_file: .env
     ports:
       - "3000:3000"
     volumes:
-      - ./streams.json:/app/streams.json:ro
+      - logos:/app/public/logos
       - ./stream:/app/stream
     restart: unless-stopped
     healthcheck:
@@ -14,3 +15,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+volumes:
+  logos:

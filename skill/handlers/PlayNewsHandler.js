@@ -75,7 +75,7 @@ const PlayNewsHandler = {
     const lines = top.map((r, i) => formatResultForSpeech(r, i));
     const speech = `${lines.join('. ')}. Welche Nummer?`;
 
-    renderNewsList(handlerInput, top, `Nachrichten: ${query}`);
+    renderNewsList(handlerInput, [{ title: `Nachrichten: ${query}`, results: top }], `Nachrichten: ${query}`);
 
     return handlerInput.responseBuilder
       .speak(speech)

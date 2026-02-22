@@ -13,6 +13,7 @@ const PlayNewsHandler = require('./skill/handlers/PlayNewsHandler');
 const PlayChannelHandler = require('./skill/handlers/PlayChannelHandler');
 const SearchMediathekHandler = require('./skill/handlers/SearchMediathekHandler');
 const PlayMediathekResultHandler = require('./skill/handlers/PlayMediathekResultHandler');
+const PlayCategoryHandler = require('./skill/handlers/PlayCategoryHandler');
 const PlayVideoHandler = require('./skill/handlers/PlayVideoHandler');
 const ListChannelsHandler = require('./skill/handlers/ListChannelsHandler');
 const TouchEventHandler = require('./skill/handlers/TouchEventHandler');
@@ -26,6 +27,9 @@ const PORT = process.env.PORT || 3000;
 if (!process.env.JWT_SECRET) {
   console.warn('WARNUNG: JWT_SECRET nicht gesetzt! Proxy-Routen werden nicht funktionieren.');
 }
+
+// --- Lokale Logos ---
+app.use('/logos', express.static(path.join(__dirname, 'public', 'logos')));
 
 // --- HLS Proxy ---
 app.use('/proxy', hlsProxy);
@@ -75,6 +79,7 @@ const skillBuilder = Alexa.SkillBuilders.custom()
     PlayChannelHandler,
     SearchMediathekHandler,
     PlayMediathekResultHandler,
+    PlayCategoryHandler,
     PlayVideoHandler,
     ListChannelsHandler,
     TouchEventHandler,

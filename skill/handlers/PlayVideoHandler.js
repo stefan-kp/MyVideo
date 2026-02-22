@@ -14,9 +14,9 @@ const PlayVideoHandler = {
   async handle(handlerInput) {
     console.log('PlayVideoIntent -> Nachrichten-Suche als Fallback');
 
-    let results;
+    let categorized;
     try {
-      results = await mediathek.searchLatestNews();
+      categorized = await mediathek.searchCategorizedNews();
     } catch (err) {
       console.error('PlayVideo news search error:', err.message);
       return handlerInput.responseBuilder
@@ -26,7 +26,9 @@ const PlayVideoHandler = {
         .getResponse();
     }
 
-    if (!results || results.length === 0) {
+    const { sections } = categorized;
+
+    if (!sections || sections.length === 0) {
       return handlerInput.responseBuilder
         .speak('Sage einen Sendernamen oder suche in der Mediathek.')
         .reprompt('Welchen Sender moechtest du sehen?')
@@ -34,18 +36,18 @@ const PlayVideoHandler = {
         .getResponse();
     }
 
-    const top = results.slice(0, 6);
+    const allResults = sections.flatMap(s => s.results);
 
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
-    sessionAttributes.mediathekResults = top;
+    sessionAttributes.mediathekResults = allResults;
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
-    const spokenResults = top.slice(0, 3);
+    const spokenResults = allResults.slice(0, 3);
     const lines = spokenResults.map((r, i) => formatResultForSpeech(r, i));
-    const moreText = top.length > 3 ? ` ${top.length - 3} weitere auf dem Display.` : '';
+    const moreText = allResults.length > 3 ? ` ${allResults.length - 3} weitere auf dem Display.` : '';
     const speech = `Aktuelle Nachrichten: ${lines.join('. ')}.${moreText} Welche Nummer, oder sage einen Sender.`;
 
-    renderNewsList(handlerInput, top, 'Aktuelle Nachrichten');
+    renderNewsList(handlerInput, sections, 'Aktuelle Nachrichten');
 
     return handlerInput.responseBuilder
       .speak(speech)

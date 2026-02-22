@@ -20,84 +20,115 @@
             "color": "white",
             "fontSize": "32dp",
             "fontWeight": "bold",
-            "paddingBottom": "20dp"
+            "paddingBottom": "16dp"
           },
           {
             "type": "Sequence",
             "width": "100%",
             "grow": 1,
             "scrollDirection": "vertical",
-            "data": "${newsData.properties.results}",
-            "numbered": true,
+            "data": "${newsData.properties.sections}",
             "items": [
               {
-                "type": "TouchWrapper",
-                "onPress": [
-                  {
-                    "type": "SendEvent",
-                    "arguments": ["selectResult", "${data.index}"]
-                  }
-                ],
+                "type": "Container",
+                "width": "100%",
+                "paddingBottom": "8dp",
                 "items": [
                   {
-                    "type": "Frame",
-                    "backgroundColor": "${data.index % 2 == 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}",
-                    "borderRadius": "12dp",
-                    "paddingLeft": "20dp",
-                    "paddingRight": "20dp",
-                    "paddingTop": "14dp",
-                    "paddingBottom": "14dp",
-                    "marginBottom": "8dp",
+                    "type": "Text",
+                    "text": "${data.title}",
+                    "color": "#4FC3F7",
+                    "fontSize": "24dp",
+                    "fontWeight": "bold",
+                    "paddingTop": "12dp",
+                    "paddingBottom": "10dp"
+                  },
+                  {
+                    "type": "Container",
+                    "width": "100%",
+                    "data": "${data.results}",
                     "items": [
                       {
-                        "type": "Container",
-                        "direction": "row",
-                        "alignItems": "center",
+                        "type": "TouchWrapper",
+                        "onPress": [
+                          {
+                            "type": "SendEvent",
+                            "arguments": ["selectResult", "${data.flatIndex}"]
+                          }
+                        ],
                         "items": [
                           {
-                            "type": "Text",
-                            "text": "${ordinal}",
-                            "color": "#4FC3F7",
-                            "fontSize": "28dp",
-                            "fontWeight": "bold",
-                            "width": "40dp"
-                          },
-                          {
-                            "type": "Container",
-                            "grow": 1,
-                            "paddingLeft": "12dp",
+                            "type": "Frame",
+                            "backgroundColor": "${data.flatIndex % 2 == 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}",
+                            "borderRadius": "12dp",
+                            "paddingLeft": "20dp",
+                            "paddingRight": "20dp",
+                            "paddingTop": "14dp",
+                            "paddingBottom": "14dp",
+                            "marginBottom": "8dp",
                             "items": [
-                              {
-                                "type": "Text",
-                                "text": "${data.title}",
-                                "color": "white",
-                                "fontSize": "22dp",
-                                "fontWeight": "bold",
-                                "maxLines": 2
-                              },
                               {
                                 "type": "Container",
                                 "direction": "row",
-                                "paddingTop": "4dp",
+                                "alignItems": "center",
                                 "items": [
                                   {
                                     "type": "Text",
-                                    "text": "${data.channel}",
-                                    "color": "#B0BEC5",
-                                    "fontSize": "18dp"
+                                    "text": "${data.flatIndex + 1}",
+                                    "color": "#4FC3F7",
+                                    "fontSize": "28dp",
+                                    "fontWeight": "bold",
+                                    "width": "40dp"
                                   },
                                   {
-                                    "type": "Text",
-                                    "text": " · ${data.time}",
-                                    "color": "#78909C",
-                                    "fontSize": "18dp"
+                                    "type": "Image",
+                                    "source": "${data.logo}",
+                                    "width": "40dp",
+                                    "height": "40dp",
+                                    "borderRadius": "6dp",
+                                    "scale": "best-fit",
+                                    "when": "${data.logo != ''}"
                                   },
                                   {
-                                    "type": "Text",
-                                    "text": " · ${data.duration}",
-                                    "color": "#78909C",
-                                    "fontSize": "18dp",
-                                    "when": "${data.duration != ''}"
+                                    "type": "Container",
+                                    "grow": 1,
+                                    "paddingLeft": "12dp",
+                                    "items": [
+                                      {
+                                        "type": "Text",
+                                        "text": "${data.title}",
+                                        "color": "white",
+                                        "fontSize": "22dp",
+                                        "fontWeight": "bold",
+                                        "maxLines": 2
+                                      },
+                                      {
+                                        "type": "Container",
+                                        "direction": "row",
+                                        "paddingTop": "4dp",
+                                        "items": [
+                                          {
+                                            "type": "Text",
+                                            "text": "${data.channel}",
+                                            "color": "#B0BEC5",
+                                            "fontSize": "18dp"
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "text": " · ${data.time}",
+                                            "color": "#78909C",
+                                            "fontSize": "18dp"
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "text": " · ${data.duration}",
+                                            "color": "#78909C",
+                                            "fontSize": "18dp",
+                                            "when": "${data.duration != ''}"
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 ]
                               }

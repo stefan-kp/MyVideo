@@ -9,6 +9,10 @@ if [ -n "$TUNNEL_TOKEN" ]; then
   echo "Cloudflare Tunnel gestartet (PID: $TUNNEL_PID)"
 fi
 
+# Download channel logos (skips existing ones)
+echo "Lade Sender-Logos..."
+sh /app/scripts/download-logos.sh
+
 # Start Node.js application
 echo "Starte MyVideo Server..."
 exec node server.js

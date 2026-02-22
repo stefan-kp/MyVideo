@@ -48,7 +48,7 @@ const SearchMediathekHandler = {
     const lines = top.map((r, i) => formatResultForSpeech(r, i));
     const speech = `${top.length} Ergebnisse. ${lines.join('. ')}. Welche Nummer?`;
 
-    renderNewsList(handlerInput, top, `Mediathek: ${query}`);
+    renderNewsList(handlerInput, [{ title: `Mediathek: ${query}`, results: top }], `Mediathek: ${query}`);
 
     return handlerInput.responseBuilder
       .speak(speech)

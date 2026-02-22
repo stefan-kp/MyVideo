@@ -98,6 +98,23 @@
           ]
         },
         {
+          "name": "PlayCategoryIntent",
+          "slots": [
+            {
+              "name": "category",
+              "type": "NEWS_CATEGORY"
+            }
+          ],
+          "samples": [
+            "zeige {category}",
+            "{category}",
+            "was gibt es zu {category}",
+            "zeige mir {category}",
+            "starte {category}",
+            "spiele {category}"
+          ]
+        },
+        {
           "name": "PlayVideoIntent",
           "slots": [],
           "samples": [
@@ -198,6 +215,35 @@
               "name": {
                 "value": "Phoenix",
                 "synonyms": ["Phoenix HD"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEWS_CATEGORY",
+          "values": [
+            {
+              "name": {
+                "value": "Nachrichten Oesterreich",
+                "synonyms": ["oesterreich nachrichten", "nachrichten AT", "oesterreichische nachrichten"]
+              }
+            },
+            {
+              "name": {
+                "value": "Nachrichten Deutschland",
+                "synonyms": ["deutsche nachrichten", "nachrichten DE", "deutschland nachrichten"]
+              }
+            },
+            {
+              "name": {
+                "value": "Sport",
+                "synonyms": ["sport nachrichten", "sportnachrichten"]
+              }
+            },
+            {
+              "name": {
+                "value": "Kultur",
+                "synonyms": ["kultur nachrichten", "kulturnachrichten"]
               }
             }
           ]
