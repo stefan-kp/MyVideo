@@ -72,7 +72,7 @@ npm start
 | `REGION` | Nein | `AT` oder `DE` - bestimmt regionale Inhalte (Standard: `AT`) |
 | `TUNNEL_TOKEN` | Nein | Cloudflare Tunnel Token - startet Tunnel automatisch im Container |
 | `OPENROUTER_API_KEY` | Nein | OpenRouter API Key fuer AI-Zusammenfassung |
-| `OPENROUTER_MODEL` | Nein | LLM Model fuer Zusammenfassung (Standard: `google/gemini-2.0-flash-001`) |
+| `OPENROUTER_MODEL` | Nein | LLM Model fuer Zusammenfassung (Standard: `google/gemini-2.5-flash-lite`) |
 | `SKILL_ID` | Nein | Alexa Skill ID (fuer Validierung) |
 
 ### Cloudflare Tunnel (empfohlen)
@@ -92,7 +92,7 @@ ask configure
 ./scripts/deploy-skill.sh
 ```
 
-Das Script erkennt automatisch, ob bereits ein Skill existiert (`SKILL_ID` in `.env`). Falls nicht, wird ein neuer erstellt und die ID gespeichert.
+Das Script erkennt automatisch, ob bereits ein Skill existiert (`SKILL_ID` in `.env`). Falls nicht, wird ein neuer erstellt und die ID gespeichert. Nach Aenderungen am Interaction Model (z.B. neue Sprachbefehle) einfach erneut ausfuehren - das Script aktualisiert Manifest und Model automatisch.
 
 ### Manuell
 
