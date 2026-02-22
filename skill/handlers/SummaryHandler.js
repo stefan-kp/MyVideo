@@ -1,5 +1,5 @@
 const Alexa = require('ask-sdk-core');
-const { searchCategorizedNews } = require('../../lib/mediathek');
+const { searchTodaysNews } = require('../../lib/mediathek');
 const { fetchSubtitlesForResults } = require('../../lib/subtitleService');
 const { isAvailable, generateSummary } = require('../../lib/openRouterService');
 const { renderSummary } = require('../../lib/aplHelper');
@@ -36,10 +36,9 @@ const SummaryHandler = {
       console.log('Progressive response nicht moeglich:', err.message);
     }
 
-    let sections;
+    let todaysResults;
     try {
-      const data = await searchCategorizedNews();
-      sections = data.sections;
+      todaysResults = await searchTodaysNews();
     } catch (err) {
       console.error('Summary: Fehler beim Laden der Nachrichten:', err.message);
       return handlerInput.responseBuilder
@@ -48,17 +47,15 @@ const SummaryHandler = {
         .getResponse();
     }
 
-    // Nur erste Kategorie (Nachrichten AT/DE) nehmen
-    const newsSection = sections[0];
-    if (!newsSection) {
+    if (todaysResults.length === 0) {
       return handlerInput.responseBuilder
-        .speak('Es sind gerade keine Nachrichten verfuegbar.')
+        .speak('Es sind fuer heute noch keine Nachrichten verfuegbar.')
         .withShouldEndSession(true)
         .getResponse();
     }
 
     // Nur Ergebnisse mit Untertiteln
-    const resultsWithSubs = newsSection.results.filter(r => r.urlSubtitle);
+    const resultsWithSubs = todaysResults.filter(r => r.urlSubtitle);
     if (resultsWithSubs.length === 0) {
       return handlerInput.responseBuilder
         .speak('Leider sind keine Untertitel verfuegbar. Ohne Untertitel kann keine Zusammenfassung erstellt werden.')
