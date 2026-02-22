@@ -248,6 +248,12 @@
                 "value": "Kultur",
                 "synonyms": ["kultur nachrichten", "kulturnachrichten"]
               }
+            },
+            {
+              "name": {
+                "value": "Comedy",
+                "synonyms": ["unterhaltung", "kabarett", "satire"]
+              }
             }
           ]
         },

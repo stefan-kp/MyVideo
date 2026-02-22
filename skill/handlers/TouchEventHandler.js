@@ -96,10 +96,12 @@ async function handleSelectChannel(handlerInput, channelId) {
     .getResponse();
 }
 
+const REGION = (process.env.REGION || 'AT').toUpperCase();
 const CATEGORY_MAP = {
-  nachrichten: 'Nachrichten AT',
+  nachrichten: REGION === 'DE' ? 'Nachrichten DE' : 'Nachrichten AT',
   sport: 'Sport',
   kultur: 'Kultur',
+  comedy: 'Comedy',
 };
 
 async function handleSelectCategory(handlerInput, categoryId) {

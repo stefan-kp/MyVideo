@@ -5,7 +5,7 @@ Ein selbst gehosteter Alexa Skill fuer News-Junkies: Aktuelle Nachrichten aus de
 ## Was kann dieser Skill?
 
 - **Nachrichten auf einen Blick** - Beim Oeffnen zeigt der Skill die aktuellsten Nachrichtensendungen aus AT und DE: ZIB 1, ZIB 2, Spaet-ZIB, ZIB Flash, Tagesschau, heute journal
-- **Kategorie-Schnellzugriff** - "Nachrichten Oesterreich", "Nachrichten Deutschland", "Sport" oder "Kultur" - eine Kategorie sagen und sofort die passenden Sendungen sehen
+- **Kategorie-Schnellzugriff** - "Nachrichten", "Sport", "Kultur" oder "Comedy" - eine Kategorie sagen und sofort die passenden Sendungen sehen
 - **Mediathek-Suche** - Freitextsuche ueber alle oeffentlich-rechtlichen Mediatheken (ARD, ZDF, ORF, 3sat, Phoenix, ...)
 - **Live-TV** - Oeffentliche Livestreams von Das Erste, ZDF, ZDFneo, ZDFinfo, 3sat, Phoenix, Tagesschau24 und mehr
 - **Touch-Bedienung** - Ergebnislisten mit Senderlogos, antippen zum Abspielen, Schnellwahl-Buttons auf der Startseite
@@ -110,6 +110,7 @@ Der Skill ist sofort auf allen Alexa-Geraeten verfuegbar, die mit deinem Amazon-
 | "Thema Nachrichten" | ZIB, Tagesschau je nach Region |
 | "Thema Sport" | Sport Aktuell, Bundesliga (AT) / Sportschau (DE) |
 | "Thema Kultur" | kulturMONTAG (AT) / Kulturzeit (DE) |
+| "Thema Comedy" | Willkommen Oesterreich (AT) / heute-show (DE) |
 | "Tagesschau" / "ZIB" | Bestimmte Nachrichtenquelle direkt |
 | "Suche \<Begriff\>" | Freitextsuche in der Mediathek |
 | "Nummer 1" / "Nummer 2" | Ergebnis aus der Liste abspielen |
