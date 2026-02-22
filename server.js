@@ -74,6 +74,7 @@ app.get('/health', (req, res) => {
 
 // --- Alexa Skill Endpoint ---
 const skillBuilder = Alexa.SkillBuilders.custom()
+  .withApiClient(new Alexa.DefaultApiClient())
   .addRequestHandlers(
     LaunchHandler,
     PlayNewsHandler,

@@ -21,6 +21,21 @@ const SummaryHandler = {
 
     console.log('SummaryIntent: Lade Nachrichten und erstelle Zusammenfassung...');
 
+    // Progressive Response: sofortiger Wartehinweis
+    try {
+      await handlerInput.serviceClientFactory
+        .getDirectiveServiceClient()
+        .enqueue({
+          header: { requestId: handlerInput.requestEnvelope.request.requestId },
+          directive: {
+            type: 'VoicePlayer.Speak',
+            speech: 'Ich lade die aktuellen Nachrichten und erstelle eine Zusammenfassung. Einen Moment bitte.'
+          }
+        });
+    } catch (err) {
+      console.log('Progressive response nicht moeglich:', err.message);
+    }
+
     let sections;
     try {
       const data = await searchCategorizedNews();
