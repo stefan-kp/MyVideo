@@ -38,6 +38,7 @@
           },
           {
             "type": "ScrollView",
+            "id": "summaryScroll",
             "width": "100%",
             "grow": 1,
             "items": [
@@ -47,7 +48,7 @@
                 "items": [
                   {
                     "type": "Text",
-                    "text": "${summaryData.properties.summaryText}",
+                    "text": "${summaryData.properties.summaryMarkup}",
                     "color": "white",
                     "fontSize": "24dp",
                     "lineHeight": "1.5",
@@ -67,11 +68,26 @@
                     "data": "${summaryData.properties.sources}",
                     "items": [
                       {
-                        "type": "Text",
-                        "text": "${data.title} (${data.channel})",
-                        "color": "#B0BEC5",
-                        "fontSize": "18dp",
-                        "paddingBottom": "4dp"
+                        "type": "Container",
+                        "direction": "row",
+                        "alignItems": "center",
+                        "paddingBottom": "6dp",
+                        "items": [
+                          {
+                            "type": "Image",
+                            "source": "${data.logo}",
+                            "width": "24dp",
+                            "height": "24dp",
+                            "borderRadius": "4dp",
+                            "marginRight": "8dp"
+                          },
+                          {
+                            "type": "Text",
+                            "text": "${data.title} (${data.channel})",
+                            "color": "#B0BEC5",
+                            "fontSize": "18dp"
+                          }
+                        ]
                       }
                     ]
                   }
@@ -82,5 +98,13 @@
         ]
       }
     ]
-  }
+  },
+  "onMount": [
+    {
+      "type": "Scroll",
+      "componentId": "summaryScroll",
+      "distance": "100vh",
+      "targetDuration": 120000
+    }
+  ]
 }

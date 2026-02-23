@@ -2,7 +2,8 @@ const Alexa = require('ask-sdk-core');
 const { searchTodaysNews } = require('../../lib/mediathek');
 const { fetchSubtitlesForResults } = require('../../lib/subtitleService');
 const { isAvailable, generateSummary } = require('../../lib/openRouterService');
-const { renderSummary } = require('../../lib/aplHelper');
+const { renderSummary, markdownToAplMarkup, stripMarkdown } = require('../../lib/aplHelper');
+const { getLogoUrlForChannel } = require('../../lib/channels');
 
 const SummaryHandler = {
   canHandle(handlerInput) {
@@ -92,12 +93,14 @@ const SummaryHandler = {
         .getResponse();
     }
 
-    const sources = subtitleTexts.map(s => ({ title: s.title, channel: s.channel }));
+    const speechText = stripMarkdown(summary);
+    const displayMarkup = markdownToAplMarkup(summary);
+    const sources = subtitleTexts.map(s => ({ title: s.title, channel: s.channel, logo: getLogoUrlForChannel(s.channel) }));
 
-    renderSummary(handlerInput, summary, sources);
+    renderSummary(handlerInput, displayMarkup, sources);
 
     return handlerInput.responseBuilder
-      .speak(summary)
+      .speak(speechText)
       .withShouldEndSession(true)
       .getResponse();
   }
