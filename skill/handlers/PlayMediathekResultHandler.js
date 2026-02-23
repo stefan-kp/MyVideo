@@ -33,6 +33,13 @@ const PlayMediathekResultHandler = {
     }
 
     const result = results[number - 1];
+
+    if (result.segments && result.segments.length > 0) {
+      sessionAttributes.currentSegments = result.segments;
+      sessionAttributes.currentSegmentIndex = 0;
+      handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+    }
+
     const token = generateStreamToken('mediathek');
     const streamUrl = `${BASE_URL}/proxy/mediathek?url=${encodeURIComponent(result.url)}&token=${token}`;
 

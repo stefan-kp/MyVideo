@@ -6,6 +6,7 @@ services:
       - "${PORT_EXTERNAL:-3377}:${PORT:-3000}"
     volumes:
       - logos:/app/public/logos
+      - data:/app/data
       - ./stream:/app/stream
     restart: unless-stopped
     healthcheck:
@@ -17,3 +18,4 @@ services:
 
 volumes:
   logos:
+  data:

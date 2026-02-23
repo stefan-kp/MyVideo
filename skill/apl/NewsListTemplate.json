@@ -82,12 +82,12 @@
                                   },
                                   {
                                     "type": "Image",
-                                    "source": "${data.logo}",
-                                    "width": "40dp",
-                                    "height": "40dp",
+                                    "source": "${data.imageUrl != '' ? data.imageUrl : data.logo}",
+                                    "width": "${data.imageUrl != '' ? '80dp' : '40dp'}",
+                                    "height": "${data.imageUrl != '' ? '45dp' : '40dp'}",
                                     "borderRadius": "6dp",
                                     "scale": "best-fit",
-                                    "when": "${data.logo != ''}"
+                                    "when": "${data.imageUrl != '' || data.logo != ''}"
                                   },
                                   {
                                     "type": "Container",

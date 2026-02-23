@@ -7,6 +7,7 @@ const path = require('path');
 
 const channels = require('./lib/channels');
 const hlsProxy = require('./lib/hlsProxy');
+const orfService = require('./lib/orfService');
 
 const LaunchHandler = require('./skill/handlers/LaunchHandler');
 const PlayNewsHandler = require('./skill/handlers/PlayNewsHandler');
@@ -18,6 +19,7 @@ const PlayCategoryHandler = require('./skill/handlers/PlayCategoryHandler');
 const PlayVideoHandler = require('./skill/handlers/PlayVideoHandler');
 const ListChannelsHandler = require('./skill/handlers/ListChannelsHandler');
 const TouchEventHandler = require('./skill/handlers/TouchEventHandler');
+const { NextChapterHandler, PreviousChapterHandler } = require('./skill/handlers/ChapterNavigationHandler');
 const StopHandler = require('./skill/handlers/StopHandler');
 const SessionEndedHandler = require('./skill/handlers/SessionEndedHandler');
 
@@ -67,6 +69,7 @@ app.get('/health', (req, res) => {
     streamActive,
     channels: channelCount,
     jwtConfigured: !!process.env.JWT_SECRET,
+    orfApiEnabled: orfService.isEnabled(),
     baseUrl: process.env.BASE_URL || `http://localhost:${PORT}`,
     proxyUrl: `${process.env.BASE_URL || `http://localhost:${PORT}`}/proxy/live/`
   });
@@ -86,6 +89,8 @@ const skillBuilder = Alexa.SkillBuilders.custom()
     PlayVideoHandler,
     ListChannelsHandler,
     TouchEventHandler,
+    NextChapterHandler,
+    PreviousChapterHandler,
     StopHandler,
     SessionEndedHandler
   )
@@ -126,5 +131,13 @@ app.listen(PORT, () => {
 
   if (!process.env.JWT_SECRET) {
     console.warn('  WARNUNG: JWT_SECRET nicht gesetzt!');
+  }
+
+  console.log(`  ORF API:        ${orfService.isEnabled() ? 'aktiv' : 'deaktiviert'}`);
+
+  if (orfService.isEnabled()) {
+    orfService.initProfiles().catch(err => {
+      console.error('ORF API Profile-Init fehlgeschlagen:', err.message);
+    });
   }
 });

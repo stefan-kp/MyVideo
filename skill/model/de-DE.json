@@ -152,6 +152,35 @@
           ]
         },
         {
+          "name": "NextChapterIntent",
+          "slots": [],
+          "samples": [
+            "naechstes kapitel",
+            "naechster beitrag",
+            "weiter",
+            "ueberspringe",
+            "skip"
+          ]
+        },
+        {
+          "name": "PreviousChapterIntent",
+          "slots": [],
+          "samples": [
+            "vorheriges kapitel",
+            "vorheriger beitrag",
+            "zurueck",
+            "davor"
+          ]
+        },
+        {
+          "name": "AMAZON.NextIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PreviousIntent",
+          "samples": []
+        },
+        {
           "name": "AMAZON.StopIntent",
           "samples": []
         },
