@@ -1,0 +1,42 @@
+{
+  "type": "APL",
+  "version": "2024.2",
+  "theme": "dark",
+  "mainTemplate": {
+    "parameters": ["loadingData"],
+    "items": [
+      {
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "items": [
+          {
+            "type": "Text",
+            "text": "Nachrichten-Zusammenfassung",
+            "color": "white",
+            "fontSize": "32dp",
+            "fontWeight": "bold",
+            "paddingBottom": "40dp"
+          },
+          {
+            "type": "Text",
+            "text": "⏳",
+            "fontSize": "60dp",
+            "paddingBottom": "24dp"
+          },
+          {
+            "type": "Text",
+            "text": "${loadingData.properties.message}",
+            "color": "#B0BEC5",
+            "fontSize": "24dp",
+            "textAlign": "center",
+            "paddingLeft": "40dp",
+            "paddingRight": "40dp"
+          }
+        ]
+      }
+    ]
+  }
+}

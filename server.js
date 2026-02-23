@@ -8,10 +8,11 @@ const path = require('path');
 const channels = require('./lib/channels');
 const hlsProxy = require('./lib/hlsProxy');
 const orfService = require('./lib/orfService');
+const { debug, debugJson } = require('./lib/debug');
 
 const LaunchHandler = require('./skill/handlers/LaunchHandler');
 const PlayNewsHandler = require('./skill/handlers/PlayNewsHandler');
-const SummaryHandler = require('./skill/handlers/SummaryHandler');
+const { SummaryHandler, SummaryYesHandler, SummaryNoHandler, SummaryDetailHandler } = require('./skill/handlers/SummaryHandler');
 const PlayChannelHandler = require('./skill/handlers/PlayChannelHandler');
 const SearchMediathekHandler = require('./skill/handlers/SearchMediathekHandler');
 const PlayMediathekResultHandler = require('./skill/handlers/PlayMediathekResultHandler');
@@ -82,6 +83,9 @@ const skillBuilder = Alexa.SkillBuilders.custom()
     LaunchHandler,
     PlayNewsHandler,
     SummaryHandler,
+    SummaryYesHandler,
+    SummaryNoHandler,
+    SummaryDetailHandler,
     PlayChannelHandler,
     SearchMediathekHandler,
     PlayMediathekResultHandler,
@@ -100,6 +104,9 @@ const skillBuilder = Alexa.SkillBuilders.custom()
     },
     handle(handlerInput, error) {
       console.error('Alexa Skill Error:', error.message);
+      console.error('Alexa Skill Error Stack:', error.stack);
+      debug('Error handlerInput request type:', Alexa.getRequestType(handlerInput.requestEnvelope));
+      debugJson('Error handlerInput request', handlerInput.requestEnvelope.request);
       return handlerInput.responseBuilder
         .speak('Es ist ein Fehler aufgetreten. Bitte versuche es erneut.')
         .getResponse();
@@ -140,4 +147,7 @@ app.listen(PORT, () => {
       console.error('ORF API Profile-Init fehlgeschlagen:', err.message);
     });
   }
+
+  console.log(`  AI-Summary:     ${process.env.OPENROUTER_API_KEY ? 'verfuegbar (on-demand)' : 'deaktiviert (kein OPENROUTER_API_KEY)'}`);
+
 });

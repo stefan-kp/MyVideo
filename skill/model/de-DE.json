@@ -152,6 +152,24 @@
           ]
         },
         {
+          "name": "SummaryDetailIntent",
+          "slots": [
+            {
+              "name": "topic",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "erzaehl mir mehr ueber {topic}",
+            "mehr ueber {topic}",
+            "was ist mit {topic}",
+            "details zu {topic}",
+            "erzaehl mir mehr zu {topic}",
+            "mehr zu {topic}",
+            "was gibt es zu {topic}"
+          ]
+        },
+        {
           "name": "NextChapterIntent",
           "slots": [],
           "samples": [
@@ -198,6 +216,14 @@
         },
         {
           "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NoIntent",
           "samples": []
         },
         {

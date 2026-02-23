@@ -1,5 +1,6 @@
 services:
   myvideo:
+    build: .
     image: ghcr.io/stefan-kp/myvideo:latest
     env_file: .env
     ports:
