@@ -1,7 +1,4 @@
 const Alexa = require('ask-sdk-core');
-const { generateStreamToken } = require('../../lib/auth');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 const PlayMediathekResultHandler = {
   canHandle(handlerInput) {
@@ -40,14 +37,11 @@ const PlayMediathekResultHandler = {
       handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
     }
 
-    const token = generateStreamToken('mediathek');
-    const streamUrl = `${BASE_URL}/proxy/mediathek?url=${encodeURIComponent(result.url)}&token=${token}`;
-
-    console.log(`Starte Mediathek: ${result.title} -> ${streamUrl}`);
+    console.log(`Starte Mediathek: ${result.title} -> ${result.url}`);
 
     return handlerInput.responseBuilder
       .speak(`Starte ${result.title}.`)
-      .addVideoAppLaunchDirective(streamUrl, result.title, `${result.channel} - ${result.topic}`)
+      .addVideoAppLaunchDirective(result.url, result.title, `${result.channel} - ${result.topic}`)
       .getResponse();
   }
 };

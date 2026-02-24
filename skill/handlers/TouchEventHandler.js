@@ -8,6 +8,7 @@ const { renderNewsList } = require('../../lib/aplHelper');
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
+
 const TouchEventHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'Alexa.Presentation.APL.UserEvent';
@@ -59,14 +60,11 @@ async function handleSelectResult(handlerInput, index) {
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
   }
 
-  const token = generateStreamToken('mediathek');
-  const streamUrl = `${BASE_URL}/proxy/mediathek?url=${encodeURIComponent(result.url)}&token=${token}`;
-
-  console.log(`Touch selectResult[${index}]: ${result.title} -> ${streamUrl}`);
+  console.log(`Touch selectResult[${index}]: ${result.title} -> ${result.url}`);
 
   return handlerInput.responseBuilder
     .speak(`Starte ${result.title}.`)
-    .addVideoAppLaunchDirective(streamUrl, result.title, `${result.channel} - ${result.topic}`)
+    .addVideoAppLaunchDirective(result.url, result.title, `${result.channel} - ${result.topic}`)
     .getResponse();
 }
 

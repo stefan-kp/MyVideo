@@ -1,7 +1,4 @@
 const Alexa = require('ask-sdk-core');
-const { generateStreamToken } = require('../../lib/auth');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 const NextChapterHandler = {
   canHandle(handlerInput) {
@@ -37,14 +34,12 @@ const NextChapterHandler = {
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
     const segment = segments[index];
-    const token = generateStreamToken('mediathek');
-    const streamUrl = `${BASE_URL}/proxy/mediathek?url=${encodeURIComponent(segment.url)}&token=${token}`;
 
-    console.log(`Naechstes Kapitel [${index + 1}/${segments.length}]: ${segment.title} -> ${streamUrl}`);
+    console.log(`Naechstes Kapitel [${index + 1}/${segments.length}]: ${segment.title} -> ${segment.url}`);
 
     return handlerInput.responseBuilder
       .speak(`Kapitel ${index + 1}: ${segment.title}.`)
-      .addVideoAppLaunchDirective(streamUrl, segment.title, `Kapitel ${index + 1} von ${segments.length}`)
+      .addVideoAppLaunchDirective(segment.url, segment.title, `Kapitel ${index + 1} von ${segments.length}`)
       .getResponse();
   }
 };
@@ -83,14 +78,12 @@ const PreviousChapterHandler = {
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
     const segment = segments[index];
-    const token = generateStreamToken('mediathek');
-    const streamUrl = `${BASE_URL}/proxy/mediathek?url=${encodeURIComponent(segment.url)}&token=${token}`;
 
-    console.log(`Vorheriges Kapitel [${index + 1}/${segments.length}]: ${segment.title} -> ${streamUrl}`);
+    console.log(`Vorheriges Kapitel [${index + 1}/${segments.length}]: ${segment.title} -> ${segment.url}`);
 
     return handlerInput.responseBuilder
       .speak(`Kapitel ${index + 1}: ${segment.title}.`)
-      .addVideoAppLaunchDirective(streamUrl, segment.title, `Kapitel ${index + 1} von ${segments.length}`)
+      .addVideoAppLaunchDirective(segment.url, segment.title, `Kapitel ${index + 1} von ${segments.length}`)
       .getResponse();
   }
 };
