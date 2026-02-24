@@ -13,8 +13,13 @@ const LaunchHandler = {
 
     const supportsVideo = hasVideoSupport(handlerInput);
     if (!supportsVideo) {
+      const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+      sessionAttributes.pendingAction = 'summary_no_display';
+      handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
       return handlerInput.responseBuilder
-        .speak('Dieses Geraet unterstuetzt leider keine Videowiedergabe. Du brauchst einen Echo Show.')
+        .speak('Dieses Geraet hat kein Display fuer Videowiedergabe. Ich kann dir aber eine Nachrichten-Zusammenfassung vorlesen. Moechtest du das?')
+        .reprompt('Soll ich dir die Nachrichten-Zusammenfassung vorlesen?')
+        .withShouldEndSession(false)
         .getResponse();
     }
 
