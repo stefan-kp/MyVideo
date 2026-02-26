@@ -23,7 +23,34 @@ Amazon bietet keine native Moeglichkeit, Mediathek-Inhalte auf dem Echo Show abz
 - **Server mit Docker** (Raspberry Pi, NAS, VPS, ...)
 - **Oeffentliche URL** fuer den Server (z.B. via Cloudflare Tunnel - ist im Container integriert)
 
-## Schnellstart mit Docker
+## Schnellstart
+
+### Interaktives Setup (empfohlen)
+
+Das Setup-Script fuehrt dich durch die komplette Einrichtung: Voraussetzungen pruefen, `.env` konfigurieren und Alexa Skill erstellen - alles in einem Durchgang.
+
+```bash
+git clone https://github.com/stefan-kp/MyVideo.git
+cd MyVideo
+./setup.sh
+```
+
+Das Script:
+1. Prueft ob Node.js und ASK CLI installiert sind (installiert ASK CLI bei Bedarf)
+2. Fragt alle Konfigurationswerte interaktiv ab (Pflichtfelder muessen gesetzt werden, optionale koennen uebersprungen werden)
+3. Erstellt den Alexa Skill automatisch ueber die ASK CLI
+
+Danach nur noch den Server starten:
+
+```bash
+# Mit Docker
+docker compose up -d
+
+# Ohne Docker
+npm start
+```
+
+### Schnellstart mit Docker (ohne Setup-Script)
 
 ```bash
 # docker-compose.yml und .env.example herunterladen
@@ -48,19 +75,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 Oder: `openssl rand -hex 32`
 
-## Manuelle Installation (ohne Docker)
-
-```bash
-git clone https://github.com/stefan-kp/MyVideo.git
-cd MyVideo
-npm install
-
-cp .env.example .env
-# .env anpassen
-
-npm start
-```
-
 ## Konfiguration
 
 | Variable | Pflicht | Beschreibung |
@@ -73,7 +87,7 @@ npm start
 | `TUNNEL_TOKEN` | Nein | Cloudflare Tunnel Token - startet Tunnel automatisch im Container |
 | `OPENROUTER_API_KEY` | Nein | OpenRouter API Key fuer AI-Zusammenfassung |
 | `OPENROUTER_MODEL` | Nein | LLM Model fuer Zusammenfassung (Standard: `google/gemini-2.5-flash-lite`) |
-| `SKILL_ID` | Nein | Alexa Skill ID (fuer Validierung) |
+| `SKILL_ID` | Nein | Alexa Skill ID (wird vom Setup-Script automatisch gesetzt) |
 
 ### Cloudflare Tunnel (empfohlen)
 
@@ -82,6 +96,10 @@ Der einfachste Weg, den Server oeffentlich erreichbar zu machen, ist ein [Cloudf
 ## Alexa Skill einrichten
 
 ### Automatisch (empfohlen)
+
+Am einfachsten ueber das Setup-Script (`./setup.sh`), das die Skill-Erstellung mit abdeckt.
+
+Alternativ kann der Skill auch separat erstellt oder aktualisiert werden:
 
 ```bash
 # ASK CLI installieren und konfigurieren (einmalig)
@@ -92,7 +110,7 @@ ask configure
 ./scripts/deploy-skill.sh
 ```
 
-Das Script erkennt automatisch, ob bereits ein Skill existiert (`SKILL_ID` in `.env`). Falls nicht, wird ein neuer erstellt und die ID gespeichert. Nach Aenderungen am Interaction Model (z.B. neue Sprachbefehle) einfach erneut ausfuehren - das Script aktualisiert Manifest und Model automatisch.
+Das Deploy-Script erkennt automatisch, ob bereits ein Skill existiert (`SKILL_ID` in `.env`). Falls nicht, wird ein neuer erstellt und die ID gespeichert. Nach Aenderungen am Interaction Model (z.B. neue Sprachbefehle) einfach erneut ausfuehren - das Script aktualisiert Manifest und Model automatisch.
 
 ### Manuell
 
