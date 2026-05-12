@@ -18,6 +18,8 @@ function assert(c, m) { if (c) { console.log(`  ✓ ${m}`); passed++; } else { c
   assert(zdf.id === 'ZDF_HD', 'returns ZDF_HD');
   assert(typeof zdf.resolveStream === 'function', 'has resolveStream()');
   assert(zdf.logo, 'has logo URL');
+  assert(typeof zdf.url === 'string' && zdf.url.startsWith('http'), 'has upstream url (backwards-compat for hlsProxy)');
+  assert(zdf.name === 'ZDF HD', 'name getter returns displayName (legacy contract)');
 
   console.log('\n--- listChannels ---');
   const groups = channels.listChannels();
