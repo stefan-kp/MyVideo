@@ -22,6 +22,8 @@ async function testChannelBase() {
   assert(ch.id === 'foo', 'id stored');
   assert(ch.displayName === 'Foo', 'displayName stored');
   assert(ch.source === 'test', 'source stored');
+  assert(ch.name === 'Foo', 'name getter returns displayName');
+  assert(ch.logo === 'http://x/foo.png', 'logo getter returns logoUrl');
   let threw = false;
   try { await ch.resolveStream(); } catch (e) { threw = true; }
   assert(threw, 'base resolveStream() throws (must be subclassed)');
@@ -29,11 +31,19 @@ async function testChannelBase() {
 
 async function testFallbackPrimarySucceeds() {
   console.log('\n--- Fallback: primary succeeds ---');
-  const primary = new Channel({ id: 'p', displayName: 'P', synonyms: [], logoUrl: '', group: 'g', source: 's' });
+  const primary = new Channel({ id: 'p', displayName: 'Primary', synonyms: ['psyn'], logoUrl: 'http://x/p.png', group: 'gp', source: 's' });
   primary.resolveStream = async () => ({ url: 'PRIMARY', mimeType: 'm', isLive: true });
-  const fallback = new Channel({ id: 'f', displayName: 'F', synonyms: [], logoUrl: '', group: 'g', source: 's' });
+  const fallback = new Channel({ id: 'f', displayName: 'Fallback', synonyms: ['fsyn'], logoUrl: 'http://x/f.png', group: 'gf', source: 's' });
   fallback.resolveStream = async () => ({ url: 'FALLBACK', mimeType: 'm', isLive: true });
   const ch = new ChannelWithFallback(primary, fallback);
+
+  // Identity inherits from primary, not fallback
+  assert(ch.id === 'p', 'wrapped id inherits from primary');
+  assert(ch.displayName === 'Primary', 'wrapped displayName inherits from primary');
+  assert(ch.synonyms[0] === 'psyn', 'wrapped synonyms inherit from primary');
+  assert(ch.logoUrl === 'http://x/p.png', 'wrapped logoUrl inherits from primary');
+  assert(ch.group === 'gp', 'wrapped group inherits from primary');
+
   const out = await ch.resolveStream();
   assert(out.url === 'PRIMARY', 'primary URL returned');
 }
