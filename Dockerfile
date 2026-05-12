@@ -1,7 +1,7 @@
 FROM node:18-slim
 
 # Install curl (for logo download) + cloudflared (ARM64 + AMD64 compatible)
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates ffmpeg \
     && ARCH=$(dpkg --print-architecture) \
     && curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}" \
        -o /usr/local/bin/cloudflared \
