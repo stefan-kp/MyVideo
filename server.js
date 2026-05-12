@@ -108,6 +108,145 @@ fritzboxStreamRouter.use(express.static(path.join(__dirname, 'stream'), {
 
 app.use('/stream', fritzboxStreamRouter);
 
+// --- Diagnostics (LAN-only) ---
+// All /diag/* endpoints reject requests from public IPs. Cloudflare-Tunnel
+// requests appear with the tunnel ingress IP (public CF range), local-net
+// curl arrives from 127.0.0.1 / 192.168.* / 10.* / 172.16-31.*. We don't
+// trust X-Forwarded-For here on purpose - it's a defense against accidentally
+// leaking ffmpeg cmd lines (which contain JWT-signed RTSP URLs) over the
+// public tunnel.
+function isLanRequest(req) {
+  const ip = (req.socket?.remoteAddress || req.ip || '').replace(/^::ffff:/, '');
+  if (!ip) return false;
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') return true;
+  if (/^10\./.test(ip)) return true;
+  if (/^192\.168\./.test(ip)) return true;
+  if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)) return true;
+  return false;
+}
+
+const diagRouter = express.Router();
+diagRouter.use((req, res, next) => {
+  if (!isLanRequest(req)) {
+    return res.status(404).json({ error: 'not found' });
+  }
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  next();
+});
+
+// Quick channel overview - registered channels, sources, fallback wiring.
+diagRouter.get('/channels', (req, res) => {
+  const grouped = channels.listChannels();
+  const flat = [];
+  for (const [group, list] of Object.entries(grouped)) {
+    for (const ch of list) {
+      flat.push({
+        id: ch.id,
+        displayName: ch.displayName,
+        synonyms: ch.synonyms,
+        group,
+        source: ch.source || `${ch.primary?.source}+fallback`,
+        tunerId: ch.tunerId || ch.primary?.tunerId || null,
+        logo: ch.logoUrl,
+        hasFallback: !!ch.fallback,
+      });
+    }
+  }
+  res.json({ count: flat.length, channels: flat });
+});
+
+// Streamer state - what's playing now, with full ffmpeg cmd line.
+diagRouter.get('/stream-state', (req, res) => {
+  try {
+    const { getDiagnosticState } = require('./lib/sources/fritzboxSource');
+    res.json(getDiagnosticState());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Stream output dir contents (segments + playlist on disk).
+diagRouter.get('/segments', (req, res) => {
+  const fsLocal = require('fs');
+  const dir = path.join(__dirname, 'stream', 'fritzbox');
+  if (!fsLocal.existsSync(dir)) return res.json({ dir, files: [] });
+  const files = fsLocal.readdirSync(dir).map(f => {
+    const stat = fsLocal.statSync(path.join(dir, f));
+    return { name: f, size: stat.size, mtime: stat.mtime.toISOString() };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+  let m3u8 = null;
+  try {
+    m3u8 = fsLocal.readFileSync(path.join(dir, 'index.m3u8'), 'utf8');
+  } catch {}
+  res.json({ dir, files, m3u8 });
+});
+
+// Audio-picker probe + cache. Probes a channel's RTSP source for audio tracks,
+// returns the raw list + which one would be selected.
+diagRouter.get('/audio/:channelId', async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const { getInstance } = require('./lib/fritzbox/session');
+    const { M3uResolver } = require('./lib/fritzbox/m3uResolver');
+    const { probeAudioTracks, pickAudioStream, getCacheSnapshot } = require('./lib/fritzbox/audioPicker');
+    const fbData = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'lib', 'fritzbox', 'channels.json'), 'utf8'));
+    const ch = fbData.channels.find(c => c.id === channelId);
+    if (!ch) return res.status(404).json({ error: `unknown FRITZ!Box channel: ${channelId}` });
+    const session = getInstance();
+    if (!session) return res.status(503).json({ error: 'FRITZ!Box not configured' });
+    const resolver = new M3uResolver({ session });
+    const rtspUrl = await resolver.getRtspUrl(ch.tunerId);
+    const tracks = await probeAudioTracks(rtspUrl);
+    const pickIndex = pickAudioStream(tracks.map(t => ({
+      index: t.index,
+      tags: { language: t.language },
+      disposition: t.disposition,
+    })));
+    res.json({
+      channelId, tunerId: ch.tunerId, rtspUrl,
+      tracks,
+      pickedIndex: pickIndex,
+      pickedAudioMap: pickIndex == null ? null : `0:${pickIndex}`,
+      cache: getCacheSnapshot()[ch.tunerId] || null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// FRITZ!Box session status (SID present? when issued?)
+diagRouter.get('/session', async (req, res) => {
+  try {
+    const { getInstance } = require('./lib/fritzbox/session');
+    const session = getInstance();
+    if (!session) return res.json({ configured: false });
+    res.json({
+      configured: true,
+      host: session.host,
+      user: session.user,
+      sidPresent: !!session.sid,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Index of available diag endpoints (so you don't have to remember the list).
+diagRouter.get('/', (req, res) => {
+  res.json({
+    available: [
+      'GET /diag/channels',
+      'GET /diag/stream-state',
+      'GET /diag/segments',
+      'GET /diag/audio/:channelId',
+      'GET /diag/session',
+    ],
+    note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
+  });
+});
+
+app.use('/diag', diagRouter);
+
 // --- Health Check ---
 app.get('/health', (req, res) => {
   const fs = require('fs');
