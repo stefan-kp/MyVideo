@@ -38,24 +38,21 @@ app.use('/logos', express.static(path.join(__dirname, 'public', 'logos')));
 // --- HLS Proxy ---
 app.use('/proxy', hlsProxy);
 
-// --- Legacy HLS Stream Serving (DVB-C backwards compatibility) ---
-app.use('/stream', (req, res, next) => {
+// --- FRITZ!Box HLS Stream Serving (JWT-protected) ---
+const { authMiddleware } = require('./lib/auth');
+const fritzboxStreamRouter = express.Router();
+fritzboxStreamRouter.use(authMiddleware());
+fritzboxStreamRouter.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.path.endsWith('.m3u8')) {
-    res.type('application/vnd.apple.mpegurl');
-  } else if (req.path.endsWith('.ts')) {
-    res.type('video/mp2t');
-  }
-
+  if (req.path.endsWith('.m3u8')) res.type('application/vnd.apple.mpegurl');
+  else if (req.path.endsWith('.ts')) res.type('video/mp2t');
   res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.header('Pragma', 'no-cache');
-  res.header('Expires', '0');
-
   next();
-}, express.static(path.join(__dirname, 'stream')));
+});
+fritzboxStreamRouter.use(express.static(path.join(__dirname, 'stream')));
+app.use('/stream', fritzboxStreamRouter);
 
 // --- Health Check ---
 app.get('/health', (req, res) => {
