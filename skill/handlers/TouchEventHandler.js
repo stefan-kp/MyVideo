@@ -1,12 +1,9 @@
 const Alexa = require('ask-sdk-core');
 const channels = require('../../lib/channels');
-const { generateStreamToken } = require('../../lib/auth');
-const { checkStreamAvailable } = require('../../lib/hlsProxy');
+const { friendlyErrorMessage } = require('./PlayChannelHandler');
 const { searchCategory } = require('../../lib/mediathek');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
 const { renderNewsList } = require('../../lib/aplHelper');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 
 const TouchEventHandler = {
@@ -77,27 +74,24 @@ async function handleSelectChannel(handlerInput, channelId) {
       .getResponse();
   }
 
-  const check = await checkStreamAvailable(channel.url);
-  if (!check.available) {
-    console.log(`Touch selectChannel: ${channel.name} nicht verfuegbar (HTTP ${check.status})`);
-    const reason = check.status === 403
-      ? 'Der Stream ist gerade geo-blockiert.'
-      : 'Der Stream ist gerade nicht erreichbar.';
+  let stream;
+  try {
+    stream = await channel.resolveStream();
+  } catch (err) {
+    const reason = friendlyErrorMessage(err);
+    console.log(`Touch selectChannel: ${channel.displayName} nicht verfuegbar - ${err && err.message ? err.message : err}`);
     return handlerInput.responseBuilder
-      .speak(`${channel.name} kann nicht gestartet werden. ${reason}`)
+      .speak(`${channel.displayName} kann nicht gestartet werden. ${reason}`)
       .reprompt('Welchen Sender moechtest du sehen?')
       .withShouldEndSession(false)
       .getResponse();
   }
 
-  const token = generateStreamToken(channel.id);
-  const streamUrl = `${BASE_URL}/proxy/live/${channel.id}/master.m3u8?token=${token}`;
-
-  console.log(`Touch selectChannel: ${channel.name} -> ${streamUrl}`);
+  console.log(`Touch selectChannel: ${channel.displayName} -> ${stream.url}`);
 
   return handlerInput.responseBuilder
-    .speak(`Starte ${channel.name}.`)
-    .addVideoAppLaunchDirective(streamUrl, channel.name, `${channel.group} - ${channel.name}`)
+    .speak(`Starte ${channel.displayName}.`)
+    .addVideoAppLaunchDirective(stream.url, channel.displayName, `${channel.group} - ${channel.displayName}`)
     .getResponse();
 }
 
