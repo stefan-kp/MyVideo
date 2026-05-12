@@ -39,6 +39,28 @@ async function testFritzboxMerge() {
   assert(totalCount >= 26, `at least 26 channels (got ${totalCount})`);
 }
 
+async function testWrappedChannelExposesHlsUrl() {
+  console.log('\n--- Wrapped channel: HLS upstream URL access ---');
+  // Make sure FRITZ env is set so wrappers exist
+  process.env.FRITZBOX_HOST = '192.168.0.1';
+  process.env.FRITZBOX_USER = 'tv';
+  process.env.FRITZBOX_PASSWORD = 'fake';
+
+  delete require.cache[require.resolve('../lib/channels')];
+  delete require.cache[require.resolve('../lib/sources/fritzboxSource')];
+  delete require.cache[require.resolve('../lib/fritzbox/session')];
+  const ch = require('../lib/channels');
+
+  // ZDF_HD is requested by hlsProxy after HlsSource builds the URL via resolveStream
+  // ChannelWithFallback wraps it, so findChannel('ZDF_HD') returns the wrapper.
+  // Wrapper.fallback must expose the upstream URL the proxy can fetch.
+  const zdf = ch.findChannel('ZDF_HD');
+  assert(zdf, 'finds ZDF_HD (wrapper)');
+  assert(zdf.constructor.name === 'ChannelWithFallback', 'returns wrapper');
+  const upstream = zdf.url || zdf.fallback?.url || zdf.primary?.url;
+  assert(typeof upstream === 'string' && upstream.startsWith('http'), 'wrapper exposes HLS upstream URL via .fallback');
+}
+
 (async () => {
   console.log('\n--- findChannel ---');
   const zdf = channels.findChannel('zdf');
@@ -60,6 +82,7 @@ async function testFritzboxMerge() {
   assert(phx && phx.id === 'Phoenix_HD', 'finds Phoenix_HD by id');
 
   await testFritzboxMerge();
+  await testWrappedChannelExposesHlsUrl();
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);

@@ -1,13 +1,9 @@
 const Alexa = require('ask-sdk-core');
 const mediathek = require('../../lib/mediathek');
 const channels = require('../../lib/channels');
-const { generateStreamToken } = require('../../lib/auth');
-const { checkStreamAvailable } = require('../../lib/hlsProxy');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
 const { renderNewsList } = require('../../lib/aplHelper');
 const { searchCategory, CATEGORY_SLOT_MAP } = require('../../lib/mediathek');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 const PlayNewsHandler = {
   canHandle(handlerInput) {
@@ -61,15 +57,15 @@ const PlayNewsHandler = {
     if (source && source.toLowerCase().includes('tagesschau')) {
       const channel = channels.findChannel('Tagesschau24');
       if (channel) {
-        const check = await checkStreamAvailable(channel.url);
-        if (check.available) {
-          const token = generateStreamToken(channel.id);
-          const streamUrl = `${BASE_URL}/proxy/live/${channel.id}/master.m3u8?token=${token}`;
-          console.log(`Nachrichten Livestream: ${channel.name} -> ${streamUrl}`);
+        try {
+          const stream = await channel.resolveStream();
+          console.log(`Nachrichten Livestream: ${channel.displayName} -> ${stream.url}`);
           return handlerInput.responseBuilder
             .speak('Starte Tagesschau 24 live.')
-            .addVideoAppLaunchDirective(streamUrl, 'Tagesschau 24', 'ARD - Tagesschau 24 Live')
+            .addVideoAppLaunchDirective(stream.url, 'Tagesschau 24', 'ARD - Tagesschau 24 Live')
             .getResponse();
+        } catch (err) {
+          console.log(`Tagesschau 24 Stream nicht verfuegbar: ${err && err.message ? err.message : err}`);
         }
       }
       // Fallback: search mediathek for Tagesschau
