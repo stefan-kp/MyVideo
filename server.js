@@ -39,6 +39,10 @@ app.use('/logos', express.static(path.join(__dirname, 'public', 'logos')));
 app.use('/proxy', hlsProxy);
 
 // --- FRITZ!Box HLS Stream Serving (JWT-protected) ---
+// Both /stream/.../*.m3u8 and /stream/.../*.ts require ?token=<jwt>. The
+// .m3u8 is rewritten on the fly so each segment line carries the same token,
+// otherwise HLS players (VLC, Echo Show) would fetch segments without
+// auth and get 401.
 const { authMiddleware } = require('./lib/auth');
 const fritzboxStreamRouter = express.Router();
 fritzboxStreamRouter.use(authMiddleware());
@@ -46,12 +50,36 @@ fritzboxStreamRouter.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.path.endsWith('.m3u8')) res.type('application/vnd.apple.mpegurl');
-  else if (req.path.endsWith('.ts')) res.type('video/mp2t');
   res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
   next();
 });
-fritzboxStreamRouter.use(express.static(path.join(__dirname, 'stream')));
+
+// Rewrite .m3u8: append ?token=<jwt> to every segment reference.
+fritzboxStreamRouter.get('/*.m3u8', (req, res, next) => {
+  const fs = require('fs');
+  const filePath = path.join(__dirname, 'stream', req.path);
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return next();
+    const token = req.query.token;
+    const rewritten = data.split('\n').map(line => {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) return line;
+      // Plain segment reference - append token. Preserve any existing query.
+      const sep = t.includes('?') ? '&' : '?';
+      return `${t}${sep}token=${token}`;
+    }).join('\n');
+    res.type('application/vnd.apple.mpegurl');
+    res.send(rewritten);
+  });
+});
+
+// Segments and anything else: serve as static.
+fritzboxStreamRouter.use(express.static(path.join(__dirname, 'stream'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.ts')) res.type('video/mp2t');
+  },
+}));
+
 app.use('/stream', fritzboxStreamRouter);
 
 // --- Health Check ---
