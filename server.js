@@ -38,24 +38,21 @@ app.use('/logos', express.static(path.join(__dirname, 'public', 'logos')));
 // --- HLS Proxy ---
 app.use('/proxy', hlsProxy);
 
-// --- Legacy HLS Stream Serving (DVB-C backwards compatibility) ---
-app.use('/stream', (req, res, next) => {
+// --- FRITZ!Box HLS Stream Serving (JWT-protected) ---
+const { authMiddleware } = require('./lib/auth');
+const fritzboxStreamRouter = express.Router();
+fritzboxStreamRouter.use(authMiddleware());
+fritzboxStreamRouter.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.path.endsWith('.m3u8')) {
-    res.type('application/vnd.apple.mpegurl');
-  } else if (req.path.endsWith('.ts')) {
-    res.type('video/mp2t');
-  }
-
+  if (req.path.endsWith('.m3u8')) res.type('application/vnd.apple.mpegurl');
+  else if (req.path.endsWith('.ts')) res.type('video/mp2t');
   res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.header('Pragma', 'no-cache');
-  res.header('Expires', '0');
-
   next();
-}, express.static(path.join(__dirname, 'stream')));
+});
+fritzboxStreamRouter.use(express.static(path.join(__dirname, 'stream')));
+app.use('/stream', fritzboxStreamRouter);
 
 // --- Health Check ---
 app.get('/health', (req, res) => {
@@ -118,6 +115,20 @@ const adapter = new ExpressAdapter(skill, true, true);
 
 app.post('/alexa', adapter.getRequestHandlers());
 
+// --- FFmpeg cleanup on shutdown ---
+const fritzboxSourceModule = require('./lib/sources/fritzboxSource');
+async function gracefulShutdown(signal) {
+  console.log(`Empfangen: ${signal}, beende FFmpeg-Stream...`);
+  try {
+    if (fritzboxSourceModule.shutdown) await fritzboxSourceModule.shutdown();
+  } catch (e) {
+    console.error('Shutdown error:', e.message);
+  }
+  process.exit(0);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 // --- Start Server ---
 app.listen(PORT, () => {
   const channelList = channels.listChannels();
@@ -150,4 +161,25 @@ app.listen(PORT, () => {
 
   console.log(`  AI-Summary:     ${process.env.OPENROUTER_API_KEY ? 'verfuegbar (on-demand)' : 'deaktiviert (kein OPENROUTER_API_KEY)'}`);
 
+  // --- FRITZ!Box tuner verification (best-effort) ---
+  (async () => {
+    try {
+      const sessMod = require('./lib/fritzbox/session');
+      const session = sessMod.getInstance();
+      if (!session) {
+        console.log('  FRITZ!Box:     deaktiviert (kein FRITZBOX_HOST/USER/PASSWORD)');
+        return;
+      }
+      const { verifyTuners } = require('./lib/fritzbox/discovery');
+      const data = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'lib', 'fritzbox', 'channels.json'), 'utf8'));
+      const { ok, missing, fritzCount } = await verifyTuners(session, data.channels);
+      console.log(`  FRITZ!Box:     ${ok.length}/${data.channels.length} Sender verifiziert (FRITZ!Box hat ${fritzCount} Sender insgesamt)`);
+      if (missing.length > 0) {
+        console.warn(`  FRITZ!Box:     ${missing.length} Sender fehlen:`);
+        for (const m of missing) console.warn(`                  - ${m.displayName} (tunerId=${m.tunerId})`);
+      }
+    } catch (err) {
+      console.warn(`  FRITZ!Box:     Verifikation fehlgeschlagen: ${err.message}`);
+    }
+  })();
 });

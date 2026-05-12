@@ -16,6 +16,23 @@ zdf_info_hd.png
 phoenix_hd.png
 orf1_hd.png
 orf2o_hd.png
+orf2t_hd.png
+orf_iii_hd.png
+orf_sport+_hd.png
+servustv_hd_oesterreich.png
+atv_hd.png
+puls_24_hd.png
+prosieben_austria.png
+sat1_a.png
+rtl_austria.png
+vox_austria.png
+arte_hd.png
+kika_hd.png
+bbc_world_news_hd.png
+al_jazeera_english_hd.png
+france_24_hd.png
+cnbc_hd.png
+nhk_worldjpn.png
 "
 
 mkdir -p "$LOGO_DIR"

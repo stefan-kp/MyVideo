@@ -29,6 +29,46 @@
                 "paddingBottom": "16dp"
               },
               {
+                "type": "Container",
+                "width": "100%",
+                "direction": "row",
+                "alignItems": "center",
+                "paddingBottom": "12dp",
+                "data": "${launchData.properties.liveTVChannels}",
+                "items": [
+                  {
+                    "type": "TouchWrapper",
+                    "onPress": [
+                      {
+                        "type": "SendEvent",
+                        "arguments": ["selectChannel", "${data.id}"]
+                      }
+                    ],
+                    "items": [
+                      {
+                        "type": "Frame",
+                        "backgroundColor": "rgba(255,255,255,0.10)",
+                        "borderRadius": "8dp",
+                        "paddingLeft": "6dp",
+                        "paddingRight": "6dp",
+                        "paddingTop": "6dp",
+                        "paddingBottom": "6dp",
+                        "marginRight": "6dp",
+                        "items": [
+                          {
+                            "type": "Image",
+                            "source": "${data.logo}",
+                            "width": "60dp",
+                            "height": "40dp",
+                            "scale": "best-fit"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
                 "type": "Sequence",
                 "width": "100%",
                 "grow": 1,

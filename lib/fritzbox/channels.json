@@ -1,0 +1,31 @@
+{
+  "_comment": "Curated FRITZ!Box channel list. tunerId is from the FRITZ!Box HD listing at /dvb/tvhd.lua. If FRITZ!Box re-scan changes IDs, update here.",
+  "channels": [
+    { "id": "orf1",            "tunerId": "40200_1010", "displayName": "ORF 1",              "synonyms": ["orf eins", "orf1"],                       "group": "ORF",            "logoFile": "orf1_hd.png" },
+    { "id": "orf2t",           "tunerId": "40200_1020", "displayName": "ORF 2 Tirol",        "synonyms": ["orf zwei", "orf 2", "orf 2 tirol"],       "group": "ORF",            "logoFile": "orf2t_hd.png" },
+    { "id": "orf3",            "tunerId": "41800_3020", "displayName": "ORF III",            "synonyms": ["orf drei", "orf 3", "orf iii"],           "group": "ORF",            "logoFile": "orf_iii_hd.png" },
+    { "id": "orfSport",        "tunerId": "45000_7030", "displayName": "ORF SPORT+",         "synonyms": ["orf sport plus", "orf sport"],            "group": "Sport",          "logoFile": "orf_sport+_hd.png" },
+    { "id": "servustv",        "tunerId": "41000_2010", "displayName": "ServusTV",           "synonyms": ["servus tv", "servus"],                    "group": "Privat AT",      "logoFile": "servustv_hd_oesterreich.png" },
+    { "id": "atv",             "tunerId": "40200_1030", "displayName": "ATV",                "synonyms": ["atv hd"],                                  "group": "Privat AT",      "logoFile": "atv_hd.png" },
+    { "id": "puls24",          "tunerId": "45000_7010", "displayName": "PULS 24",            "synonyms": ["puls vierundzwanzig", "puls 24"],         "group": "Privat AT",      "logoFile": "puls_24_hd.png" },
+    { "id": "pro7at",          "tunerId": "42600_4040", "displayName": "ProSieben",          "synonyms": ["pro sieben", "prosieben", "prosieben austria"], "group": "Privat DE", "logoFile": "prosieben_austria.png" },
+    { "id": "sat1at",          "tunerId": "42600_4020", "displayName": "SAT.1",              "synonyms": ["sat eins", "sat 1", "sat.1"],             "group": "Privat DE",      "logoFile": "sat1_a.png" },
+    { "id": "rtlat",           "tunerId": "42600_4030", "displayName": "RTL",                "synonyms": ["rtl austria"],                            "group": "Privat DE",      "logoFile": "rtl_austria.png" },
+    { "id": "voxat",           "tunerId": "43400_5030", "displayName": "VOX",                "synonyms": ["vox austria"],                            "group": "Privat DE",      "logoFile": "vox_austria.png" },
+    { "id": "dasErsteHd",      "tunerId": "41000_2020", "displayName": "Das Erste",          "synonyms": ["ard", "erstes", "das erste"],             "group": "Öffentlich DE",  "logoFile": "das_erste_hd.png" },
+    { "id": "zdfHd",           "tunerId": "41000_2030", "displayName": "ZDF",                "synonyms": ["zweites", "zdf hd"],                      "group": "Öffentlich DE",  "logoFile": "zdf_hd.png" },
+    { "id": "3satHd",          "tunerId": "42600_4010", "displayName": "3sat",               "synonyms": ["drei sat", "dreisat"],                    "group": "Öffentlich DE",  "logoFile": "3sat_hd.png" },
+    { "id": "arteHd",          "tunerId": "44200_6030", "displayName": "arte",               "synonyms": ["arte hd"],                                "group": "Öffentlich DE",  "logoFile": "arte_hd.png" },
+    { "id": "phoenixHd",       "tunerId": "46600_9040", "displayName": "Phoenix",            "synonyms": ["phoenix hd"],                             "group": "Öffentlich DE",  "logoFile": "phoenix_hd.png" },
+    { "id": "tagesschau24Hd",  "tunerId": "49000_12010","displayName": "Tagesschau 24",      "synonyms": ["tagesschau", "tagesschau 24"],            "group": "Öffentlich DE",  "logoFile": "tagesschau24_hd.png" },
+    { "id": "zdfinfoHd",       "tunerId": "57000_22040","displayName": "ZDFinfo",            "synonyms": ["zdf info", "zdfinfo"],                    "group": "Öffentlich DE",  "logoFile": "zdf_info_hd.png" },
+    { "id": "ardAlphaHd",      "tunerId": "58600_24010","displayName": "ARD alpha",          "synonyms": ["alpha", "ard alpha"],                     "group": "Öffentlich DE",  "logoFile": "ard_alpha_hd.png" },
+    { "id": "oneHd",           "tunerId": "49000_12030","displayName": "ONE",                "synonyms": ["one hd", "ard one"],                      "group": "Öffentlich DE",  "logoFile": "one_hd.png" },
+    { "id": "kikaHd",          "tunerId": "45800_8030", "displayName": "KiKA",               "synonyms": ["kika"],                                    "group": "Öffentlich DE",  "logoFile": "kika_hd.png" },
+    { "id": "bbcWorld",        "tunerId": "53000_17010","displayName": "BBC World News",     "synonyms": ["bbc news", "bbc", "bbc world"],           "group": "International",  "logoFile": "bbc_world_news_hd.png" },
+    { "id": "aljazeera",       "tunerId": "60200_26030","displayName": "Al Jazeera English", "synonyms": ["al jazeera", "aljazeera"],                "group": "International",  "logoFile": "al_jazeera_english_hd.png" },
+    { "id": "france24",        "tunerId": "53000_17040","displayName": "France 24",          "synonyms": ["france 24", "france vierundzwanzig"],     "group": "International",  "logoFile": "france_24_hd.png" },
+    { "id": "cnbc",            "tunerId": "53000_17020","displayName": "CNBC",               "synonyms": ["cnbc hd"],                                "group": "International",  "logoFile": "cnbc_hd.png" },
+    { "id": "nhk",             "tunerId": "58600_24030","displayName": "NHK World",          "synonyms": ["nhk", "nhk world"],                       "group": "International",  "logoFile": "nhk_worldjpn.png" }
+  ]
+}

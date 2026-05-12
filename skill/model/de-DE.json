@@ -237,56 +237,233 @@
           "values": [
             {
               "name": {
+                "value": "ORF 1",
+                "synonyms": [
+                  "ORF Eins",
+                  "ORF1"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ORF 2",
+                "synonyms": [
+                  "ORF Zwei",
+                  "ORF 2 Tirol",
+                  "ORF Two"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ORF III",
+                "synonyms": [
+                  "ORF Drei",
+                  "ORF 3"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ORF SPORT+",
+                "synonyms": [
+                  "ORF Sport plus",
+                  "ORF Sport"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ServusTV",
+                "synonyms": [
+                  "Servus TV",
+                  "Servus"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ATV",
+                "synonyms": [
+                  "A T V",
+                  "ATV HD"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "PULS 24",
+                "synonyms": [
+                  "Puls Vierundzwanzig",
+                  "Puls 24"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ProSieben",
+                "synonyms": [
+                  "Pro Sieben",
+                  "ProSieben Austria"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "SAT.1",
+                "synonyms": [
+                  "Sat Eins",
+                  "Sat 1"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "RTL",
+                "synonyms": [
+                  "RTL Austria"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "VOX",
+                "synonyms": [
+                  "VOX Austria"
+                ]
+              }
+            },
+            {
+              "name": {
                 "value": "Das Erste",
-                "synonyms": ["ARD", "Erstes", "Erstes Programm", "ARD Das Erste"]
-              }
-            },
-            {
-              "name": {
-                "value": "ONE",
-                "synonyms": ["ARD ONE", "Eins Festival"]
-              }
-            },
-            {
-              "name": {
-                "value": "ARD alpha",
-                "synonyms": ["Alpha", "BR Alpha"]
-              }
-            },
-            {
-              "name": {
-                "value": "Tagesschau24",
-                "synonyms": ["Tagesschau 24"]
+                "synonyms": [
+                  "ARD",
+                  "Erstes",
+                  "Erstes Programm",
+                  "ARD Das Erste"
+                ]
               }
             },
             {
               "name": {
                 "value": "ZDF",
-                "synonyms": ["ZDF HD", "Zweites", "Zweites Programm"]
-              }
-            },
-            {
-              "name": {
-                "value": "ZDF neo",
-                "synonyms": ["Neo", "ZDFneo"]
-              }
-            },
-            {
-              "name": {
-                "value": "ZDF info",
-                "synonyms": ["ZDFinfo", "ZDF Information"]
+                "synonyms": [
+                  "ZDF HD",
+                  "Zweites",
+                  "Zweites Programm"
+                ]
               }
             },
             {
               "name": {
                 "value": "3sat",
-                "synonyms": ["Drei Sat", "Dreisat"]
+                "synonyms": [
+                  "Drei Sat",
+                  "Dreisat"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "arte",
+                "synonyms": [
+                  "arte HD"
+                ]
               }
             },
             {
               "name": {
                 "value": "Phoenix",
-                "synonyms": ["Phoenix HD"]
+                "synonyms": [
+                  "Phoenix HD"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "Tagesschau 24",
+                "synonyms": [
+                  "Tagesschau24",
+                  "Tagesschau"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ZDFinfo",
+                "synonyms": [
+                  "ZDF info",
+                  "ZDF Information"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ARD alpha",
+                "synonyms": [
+                  "Alpha",
+                  "BR Alpha"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "ONE",
+                "synonyms": [
+                  "ARD ONE",
+                  "Eins Festival"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "KiKA",
+                "synonyms": [
+                  "Kika"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "BBC World News",
+                "synonyms": [
+                  "BBC News",
+                  "BBC",
+                  "BBC World"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "Al Jazeera English",
+                "synonyms": [
+                  "Al Jazeera",
+                  "Aljazeera"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "France 24",
+                "synonyms": [
+                  "France Vierundzwanzig"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "CNBC",
+                "synonyms": [
+                  "CNBC HD"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "NHK World",
+                "synonyms": [
+                  "NHK"
+                ]
               }
             }
           ]
@@ -297,31 +474,49 @@
             {
               "name": {
                 "value": "Nachrichten Oesterreich",
-                "synonyms": ["oesterreich nachrichten", "nachrichten AT", "oesterreichische nachrichten"]
+                "synonyms": [
+                  "oesterreich nachrichten",
+                  "nachrichten AT",
+                  "oesterreichische nachrichten"
+                ]
               }
             },
             {
               "name": {
                 "value": "Nachrichten Deutschland",
-                "synonyms": ["deutsche nachrichten", "nachrichten DE", "deutschland nachrichten"]
+                "synonyms": [
+                  "deutsche nachrichten",
+                  "nachrichten DE",
+                  "deutschland nachrichten"
+                ]
               }
             },
             {
               "name": {
                 "value": "Sport",
-                "synonyms": ["sport nachrichten", "sportnachrichten"]
+                "synonyms": [
+                  "sport nachrichten",
+                  "sportnachrichten"
+                ]
               }
             },
             {
               "name": {
                 "value": "Kultur",
-                "synonyms": ["kultur nachrichten", "kulturnachrichten"]
+                "synonyms": [
+                  "kultur nachrichten",
+                  "kulturnachrichten"
+                ]
               }
             },
             {
               "name": {
                 "value": "Comedy",
-                "synonyms": ["unterhaltung", "kabarett", "satire"]
+                "synonyms": [
+                  "unterhaltung",
+                  "kabarett",
+                  "satire"
+                ]
               }
             }
           ]
@@ -332,13 +527,22 @@
             {
               "name": {
                 "value": "ZIB",
-                "synonyms": ["ZIB 1", "ZIB 2", "ZIB Nacht", "die ZIB", "Zeit im Bild"]
+                "synonyms": [
+                  "ZIB 1",
+                  "ZIB 2",
+                  "ZIB Nacht",
+                  "die ZIB",
+                  "Zeit im Bild"
+                ]
               }
             },
             {
               "name": {
                 "value": "Tagesschau",
-                "synonyms": ["Tagesschau live", "die Tagesschau"]
+                "synonyms": [
+                  "Tagesschau live",
+                  "die Tagesschau"
+                ]
               }
             }
           ]

@@ -2,6 +2,20 @@ const Alexa = require('ask-sdk-core');
 const { searchCategory, CATEGORY_SLOT_MAP } = require('../../lib/mediathek');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
 const { renderNewsList } = require('../../lib/aplHelper');
+const channels = require('../../lib/channels');
+
+const CATEGORY_QUICK_LIVE = {
+  'Sport': 'orfSport',
+  'Kultur': 'orf3',
+};
+
+function buildQuickAction(categoryTitle) {
+  const channelId = CATEGORY_QUICK_LIVE[categoryTitle];
+  if (!channelId) return null;
+  const ch = channels.findChannelById(channelId);
+  if (!ch) return null;
+  return { id: ch.id, name: ch.displayName, logo: ch.logoUrl };
+}
 
 const PlayCategoryHandler = {
   canHandle(handlerInput) {
@@ -63,10 +77,14 @@ const PlayCategoryHandler = {
     sessionAttributes.mediathekResults = results;
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
+    const quickAction = buildQuickAction(categoryTitle);
     const lines = results.map((r, i) => formatResultForSpeech(r, i));
-    const speech = `${lines.join('. ')}. Welche Nummer?`;
+    let speech = `${lines.join('. ')}. Welche Nummer?`;
+    if (quickAction) {
+      speech = `${lines.join('. ')}. Welche Nummer, oder sage ${quickAction.name} fuer den Livestream?`;
+    }
 
-    renderNewsList(handlerInput, data.sections, categoryValue);
+    renderNewsList(handlerInput, data.sections, categoryValue, quickAction);
 
     return handlerInput.responseBuilder
       .speak(speech)

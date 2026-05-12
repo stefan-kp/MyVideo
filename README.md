@@ -7,7 +7,7 @@ Ein selbst gehosteter Alexa Skill fuer News-Junkies: Aktuelle Nachrichten aus de
 - **Nachrichten auf einen Blick** - Beim Oeffnen zeigt der Skill die aktuellsten Nachrichtensendungen aus AT und DE: ZIB 1, ZIB 2, Spaet-ZIB, ZIB Flash, Tagesschau, heute journal
 - **Kategorie-Schnellzugriff** - "Nachrichten", "Sport", "Kultur" oder "Comedy" - eine Kategorie sagen und sofort die passenden Sendungen sehen
 - **Mediathek-Suche** - Freitextsuche ueber alle oeffentlich-rechtlichen Mediatheken (ARD, ZDF, ORF, 3sat, Phoenix, ...)
-- **Live-TV** - Oeffentliche Livestreams von Das Erste, ZDF, ZDFneo, ZDFinfo, 3sat, Phoenix, Tagesschau24 und mehr
+- **Live-TV (FRITZ!Box + Oeffentlich)** - ORF 1/2/III, ServusTV, ATV, ProSieben, Das Erste, ZDF und viele mehr direkt von deiner FRITZ!Box (HD, kein Geo-Block). Sender ohne FRITZ!Box-Verbindung laufen ueber oeffentliche HLS-Streams.
 - **Touch-Bedienung** - Ergebnislisten mit Senderlogos, antippen zum Abspielen, Schnellwahl-Buttons auf der Startseite
 - **AI-Zusammenfassung** - Untertitel der letzten Nachrichtensendungen werden per AI zusammengefasst und vorgelesen (optional, benoetigt OpenRouter API Key)
 - **Selbst gehostet** - Laeuft auf einem Raspberry Pi oder jedem Server mit Docker. Deine Daten, dein Server
@@ -74,10 +74,42 @@ npm start
 | `OPENROUTER_API_KEY` | Nein | OpenRouter API Key fuer AI-Zusammenfassung |
 | `OPENROUTER_MODEL` | Nein | LLM Model fuer Zusammenfassung (Standard: `google/gemini-2.5-flash-lite`) |
 | `SKILL_ID` | Nein | Alexa Skill ID (fuer Validierung) |
+| `FRITZBOX_HOST` | Nein | IP/Hostname der FRITZ!Box (Standard: `192.168.0.1`). Aktiviert FRITZ!Box-Live-TV. |
+| `FRITZBOX_USER` | Nein | FRITZ!Box-Benutzername (empfohlen: eigener User "tv" mit minimalen Rechten) |
+| `FRITZBOX_PASSWORD` | Nein | Passwort dieses Benutzers |
 
 ### Cloudflare Tunnel (empfohlen)
 
 Der einfachste Weg, den Server oeffentlich erreichbar zu machen, ist ein [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/). Im Container ist `cloudflared` bereits installiert - einfach `TUNNEL_TOKEN` in der `.env` setzen und der Tunnel startet automatisch.
+
+### FRITZ!Box Live-TV (optional)
+
+Wenn dein Server im selben Netz wie eine FRITZ!Box mit DVB-C-Funktion steht, kannst du Live-TV direkt darueber beziehen (HD, kein Geo-Block, mehr Sender - ORF 1/2/III, ServusTV, ATV usw.).
+
+**Setup:**
+
+1. **FRITZ!Box-Benutzer anlegen:** FRITZ!Box-Web-UI -> *System* -> *FRITZ!Box-Benutzer* -> *Neuer Benutzer*
+   - Name: `tv` (oder beliebig)
+   - Berechtigungen: nur **"FRITZ!Box-Einstellungen"** (alles andere abwaehlen - kein VPN, kein Smart Home, keine Anrufliste)
+   - Passwort generieren und sicher merken
+
+2. **Variablen in `.env` setzen:**
+   ```
+   FRITZBOX_HOST=192.168.0.1
+   FRITZBOX_USER=tv
+   FRITZBOX_PASSWORD=<dein-passwort>
+   ```
+
+3. **Server neu starten.** Beim Start wird die Senderliste verifiziert:
+   ```
+   FRITZ!Box: 26/26 Sender verifiziert (FRITZ!Box hat 69 Sender insgesamt)
+   ```
+
+**Hinweise:**
+- `ffmpeg` muss installiert sein (im Docker-Image bereits enthalten; lokal: `brew install ffmpeg`)
+- Bei Senderwechsel dauert das erste Segment ~1-2s (H.264-Sender) bis ~3-5s (MPEG-2)
+- Sender mit oeffentlichem HLS (ARD, ZDF, 3sat, Phoenix, Tagesschau24, ARD alpha, ONE, ZDFinfo) fallen automatisch auf den oeffentlichen Stream zurueck, wenn die FRITZ!Box offline ist
+- Sender ohne oeffentliche Quelle (ORF 1/2/III, ServusTV, ATV, RTL/Pro7/SAT.1, BBC World News, ...) sind dann kurz nicht verfuegbar
 
 ## Alexa Skill einrichten
 
@@ -117,7 +149,7 @@ Der Skill ist sofort auf allen Alexa-Geraeten verfuegbar, die mit deinem Amazon-
 | "Tagesschau" / "ZIB" | Bestimmte Nachrichtenquelle direkt |
 | "Suche \<Begriff\>" | Freitextsuche in der Mediathek |
 | "Nummer 1" / "Nummer 2" | Ergebnis aus der Liste abspielen |
-| "Schalte auf ZDF" | Live-TV Sender starten |
+| "Schalte auf ZDF" | Live-TV Sender starten (FRITZ!Box bevorzugt, oeffentliches HLS als Fallback) |
 | "Zusammenfassung" | AI-Zusammenfassung der letzten Nachrichten (benoetigt OpenRouter Key) |
 | "Welche Sender gibt es" | Alle verfuegbaren Sender anzeigen |
 

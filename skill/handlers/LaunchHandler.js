@@ -60,7 +60,18 @@ const LaunchHandler = {
     const speech = `Aktuelle Nachrichten: ${lines.join('. ')}.${moreText} Welche Nummer, oder sage Tagesschau fuer den Livestream.`;
 
     const orfLogo = getLogoUrlForChannel('ORF');
-    renderLaunchScreen(handlerInput, sections, orfLogo);
+
+    // Live-TV-Quickbar: erste 8 wichtigste Sender
+    const QUICKBAR_IDS = ['orf1', 'orf2t', 'orf3', 'servustv', 'atv', 'pro7at', 'dasErsteHd', 'zdfHd'];
+    const liveTVChannels = QUICKBAR_IDS
+      .map(id => {
+        const ch = require('../../lib/channels').findChannelById(id);
+        if (!ch) return null;
+        return { id: ch.id, name: ch.displayName, logo: ch.logoUrl };
+      })
+      .filter(Boolean);
+
+    renderLaunchScreen(handlerInput, sections, orfLogo, liveTVChannels);
 
     return handlerInput.responseBuilder
       .speak(speech)
