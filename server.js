@@ -56,26 +56,31 @@ fritzboxStreamRouter.use((req, res, next) => {
 
 // Rewrite .m3u8: append ?token=<jwt> to every segment reference. If the
 // file doesn't exist yet (FFmpeg still warming up after a channel switch),
-// return a valid but empty playlist so the HLS player keeps polling instead
-// of giving up on a 404. Echo Show in particular gets stuck if the first
-// m3u8 request 404s.
+// return a live playlist pointing at a pre-encoded "Lade TV Stream..."
+// loading segment. The Echo Show plays that immediately and keeps polling
+// the playlist; once FFmpeg has written the real m3u8, the player swaps
+// to the live segments at the next poll.
 fritzboxStreamRouter.get('/*.m3u8', (req, res) => {
   const fs = require('fs');
   const filePath = path.join(__dirname, 'stream', req.path);
+  const token = req.query.token;
   res.type('application/vnd.apple.mpegurl');
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
-      // Placeholder live playlist: media-sequence 0, no segments yet, target
-      // duration matches what FFmpeg will produce. Player will retry.
+      // Loading playlist: one 6 s segment of "Lade TV Stream..." on black.
+      // EXT-X-DISCONTINUITY marks the boundary so the player resets its
+      // decoder state cleanly when the real stream starts.
       return res.send([
         '#EXTM3U',
         '#EXT-X-VERSION:3',
         '#EXT-X-TARGETDURATION:6',
         '#EXT-X-MEDIA-SEQUENCE:0',
+        '#EXT-X-DISCONTINUITY',
+        '#EXTINF:6.000000,',
+        `/stream/loading.ts?token=${token}`,
         '',
       ].join('\n'));
     }
-    const token = req.query.token;
     const rewritten = data.split('\n').map(line => {
       const t = line.trim();
       if (!t || t.startsWith('#')) return line;
@@ -85,6 +90,13 @@ fritzboxStreamRouter.get('/*.m3u8', (req, res) => {
     }).join('\n');
     res.send(rewritten);
   });
+});
+
+// Loading segment, pre-encoded, no FFmpeg involvement. Served from public/
+// instead of stream/ so it isn't touched by the streamer state machine.
+fritzboxStreamRouter.get('/loading.ts', (req, res) => {
+  res.type('video/mp2t');
+  res.sendFile(path.join(__dirname, 'public', 'stream', 'loading.ts'));
 });
 
 // Segments and anything else: serve as static.
