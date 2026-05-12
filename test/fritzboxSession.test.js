@@ -41,7 +41,7 @@ async function testSessionLogin() {
   assert(calls.length === 2, 'made exactly 2 HTTP calls');
   assert(calls[0].includes('/login_sid.lua?version=2'), 'first call is challenge endpoint');
   assert(calls[1].includes('username=tv'), 'second call passes username');
-  assert(calls[1].includes('response=salt2$'), 'second call passes response');
+  assert(calls[1].includes('response=salt2%24'), 'second call passes URL-encoded response');
 }
 
 async function testSessionCached() {
@@ -109,12 +109,88 @@ async function testWithSidRetriesOn403() {
   assert(loginCount === 2, 'logged in twice (initial + retry)');
 }
 
+async function testConcurrentLoginCoalesces() {
+  console.log('\n--- FritzboxSession.getSid (concurrent calls coalesce) ---');
+  let loginCount = 0;
+  const fakeHttp = {
+    async get(url) {
+      if (url.includes('username=')) {
+        loginCount++;
+        // Small artificial delay so concurrent callers really overlap
+        await new Promise(r => setTimeout(r, 10));
+        return { data: '<SessionInfo><SID>aabbccddeeff0011</SID></SessionInfo>' };
+      }
+      return { data: '<SessionInfo><SID>0000000000000000</SID><Challenge>2$60000$s1$6000$s2</Challenge></SessionInfo>' };
+    }
+  };
+  const sess = new FritzboxSession({ host: '192.168.0.1', user: 'tv', password: 'p', httpClient: fakeHttp });
+  const [a, b, c] = await Promise.all([sess.getSid(), sess.getSid(), sess.getSid()]);
+  assert(a === b && b === c, 'all three concurrent calls return same SID');
+  assert(loginCount === 1, `only one login HTTP roundtrip (got ${loginCount})`);
+}
+
+async function testAllZeroSidThrows() {
+  console.log('\n--- FritzboxSession.getSid (all-zero SID = login failed) ---');
+  const fakeHttp = {
+    async get(url) {
+      if (url.includes('username=')) {
+        return { data: '<SessionInfo><SID>0000000000000000</SID></SessionInfo>' };
+      }
+      return { data: '<SessionInfo><SID>0000000000000000</SID><Challenge>2$60000$s1$6000$s2</Challenge></SessionInfo>' };
+    }
+  };
+  const sess = new FritzboxSession({ host: '192.168.0.1', user: 'tv', password: 'wrong', httpClient: fakeHttp });
+  let err;
+  try { await sess.getSid(); } catch (e) { err = e; }
+  assert(err && /login failed/i.test(err.message), 'throws "login failed" on all-zero SID');
+}
+
+async function testGetInstance() {
+  console.log('\n--- FritzboxSession singleton via getInstance ---');
+  const { getInstance, resetInstance } = require('../lib/fritzbox/session');
+
+  // Save and clear env so we can control the test
+  const savedHost = process.env.FRITZBOX_HOST;
+  const savedUser = process.env.FRITZBOX_USER;
+  const savedPwd  = process.env.FRITZBOX_PASSWORD;
+
+  try {
+    resetInstance();
+    delete process.env.FRITZBOX_HOST;
+    delete process.env.FRITZBOX_USER;
+    delete process.env.FRITZBOX_PASSWORD;
+    assert(getInstance() === null, 'returns null when env not set');
+
+    resetInstance();
+    process.env.FRITZBOX_HOST = '192.168.0.1';
+    process.env.FRITZBOX_USER = 'tv';
+    process.env.FRITZBOX_PASSWORD = 'p';
+    const a = getInstance();
+    const b = getInstance();
+    assert(a instanceof FritzboxSession, 'returns FritzboxSession instance when env set');
+    assert(a === b, 'subsequent calls return the same singleton instance');
+
+    resetInstance();
+    const c = getInstance();
+    assert(c !== a, 'after resetInstance, new instance returned');
+  } finally {
+    // Restore
+    if (savedHost === undefined) delete process.env.FRITZBOX_HOST; else process.env.FRITZBOX_HOST = savedHost;
+    if (savedUser === undefined) delete process.env.FRITZBOX_USER; else process.env.FRITZBOX_USER = savedUser;
+    if (savedPwd  === undefined) delete process.env.FRITZBOX_PASSWORD; else process.env.FRITZBOX_PASSWORD = savedPwd;
+    resetInstance();
+  }
+}
+
 (async () => {
   await testChallengeResponse();
   await testSessionLogin();
   await testSessionCached();
   await testInvalidate();
   await testWithSidRetriesOn403();
+  await testConcurrentLoginCoalesces();
+  await testAllZeroSidThrows();
+  await testGetInstance();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();
