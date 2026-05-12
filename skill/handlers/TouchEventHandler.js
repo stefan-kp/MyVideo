@@ -103,6 +103,19 @@ const CATEGORY_MAP = {
   comedy: 'Comedy',
 };
 
+const CATEGORY_QUICK_LIVE = {
+  'Sport': 'orfSport',
+  'Kultur': 'orf3',
+};
+
+function buildQuickAction(categoryTitle) {
+  const channelId = CATEGORY_QUICK_LIVE[categoryTitle];
+  if (!channelId) return null;
+  const ch = channels.findChannelById(channelId);
+  if (!ch) return null;
+  return { id: ch.id, name: ch.displayName, logo: ch.logoUrl };
+}
+
 async function handleSelectCategory(handlerInput, categoryId) {
   const categoryTitle = CATEGORY_MAP[categoryId];
   if (!categoryTitle) {
@@ -139,7 +152,8 @@ async function handleSelectCategory(handlerInput, categoryId) {
   const lines = results.map((r, i) => formatResultForSpeech(r, i));
   const speech = `${lines.join('. ')}. Welche Nummer?`;
 
-  renderNewsList(handlerInput, data.sections, categoryTitle);
+  const quickAction = buildQuickAction(categoryTitle);
+  renderNewsList(handlerInput, data.sections, categoryTitle, quickAction);
 
   return handlerInput.responseBuilder
     .speak(speech)
