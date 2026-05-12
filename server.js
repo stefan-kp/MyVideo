@@ -54,12 +54,27 @@ fritzboxStreamRouter.use((req, res, next) => {
   next();
 });
 
-// Rewrite .m3u8: append ?token=<jwt> to every segment reference.
-fritzboxStreamRouter.get('/*.m3u8', (req, res, next) => {
+// Rewrite .m3u8: append ?token=<jwt> to every segment reference. If the
+// file doesn't exist yet (FFmpeg still warming up after a channel switch),
+// return a valid but empty playlist so the HLS player keeps polling instead
+// of giving up on a 404. Echo Show in particular gets stuck if the first
+// m3u8 request 404s.
+fritzboxStreamRouter.get('/*.m3u8', (req, res) => {
   const fs = require('fs');
   const filePath = path.join(__dirname, 'stream', req.path);
+  res.type('application/vnd.apple.mpegurl');
   fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return next();
+    if (err) {
+      // Placeholder live playlist: media-sequence 0, no segments yet, target
+      // duration matches what FFmpeg will produce. Player will retry.
+      return res.send([
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:6',
+        '#EXT-X-MEDIA-SEQUENCE:0',
+        '',
+      ].join('\n'));
+    }
     const token = req.query.token;
     const rewritten = data.split('\n').map(line => {
       const t = line.trim();
@@ -68,7 +83,6 @@ fritzboxStreamRouter.get('/*.m3u8', (req, res, next) => {
       const sep = t.includes('?') ? '&' : '?';
       return `${t}${sep}token=${token}`;
     }).join('\n');
-    res.type('application/vnd.apple.mpegurl');
     res.send(rewritten);
   });
 });
