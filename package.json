@@ -5,7 +5,6 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "stream": "bash scripts/start-stream.sh",
     "tunnel": "bash scripts/start-tunnel.sh"
   },
   "dependencies": {
