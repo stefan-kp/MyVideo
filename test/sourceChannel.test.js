@@ -71,11 +71,46 @@ async function testFallbackBothFail() {
   assert(err && err.message.includes('primary down'), 'primary error propagated when both fail');
 }
 
+async function testHlsSource() {
+  console.log('\n--- HlsSource ---');
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-1234567890abcdef1234567890abcdef';
+  process.env.BASE_URL = 'http://localhost:3000';
+  const { HlsSource } = require('../lib/sources/hlsSource');
+
+  const ch = new HlsSource({
+    id: 'Test_HD',
+    displayName: 'Test HD',
+    upstreamUrl: 'https://example.com/master.m3u8',
+    logoUrl: 'http://x/t.png',
+    group: 'Test',
+  });
+  assert(ch.id === 'Test_HD', 'id stored');
+  assert(ch.source === 'hls', 'source is hls');
+
+  // Mock the availability check via dependency injection
+  ch._checkAvailable = async () => ({ available: true, status: 200 });
+  const stream = await ch.resolveStream();
+  assert(stream.url.includes('/proxy/live/Test_HD/master.m3u8'), 'URL uses proxy route');
+  assert(stream.url.includes('token='), 'URL includes token');
+  assert(stream.mimeType === 'application/vnd.apple.mpegurl', 'mimeType correct');
+  assert(stream.isLive === true, 'isLive true');
+
+  ch._checkAvailable = async () => ({ available: false, status: 403 });
+  let err;
+  try { await ch.resolveStream(); } catch (e) { err = e; }
+  assert(err && err.message.toLowerCase().includes('geo'), 'geo-block error on 403');
+
+  ch._checkAvailable = async () => ({ available: false, status: 502 });
+  try { await ch.resolveStream(); } catch (e) { err = e; }
+  assert(err && err.message.toLowerCase().includes('nicht erreichbar'), 'generic error on 5xx');
+}
+
 (async () => {
   await testChannelBase();
   await testFallbackPrimarySucceeds();
   await testFallbackPrimaryFails();
   await testFallbackBothFail();
+  await testHlsSource();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();
