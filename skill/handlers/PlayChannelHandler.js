@@ -1,6 +1,23 @@
 const Alexa = require('ask-sdk-core');
 const channels = require('../../lib/channels');
 
+/**
+ * Sources are expected to throw friendly German messages (HlsSource does today).
+ * Future sources may throw low-level errors; guard against:
+ *  - non-Error throwables (err.message undefined)
+ *  - SSML-significant characters (< &) that would corrupt the speak payload
+ *  - missing trailing period (breaks speech cadence)
+ * Falls back to a generic message when the thrown value doesn't look user-ready.
+ */
+function friendlyErrorMessage(err) {
+  const fallback = 'Der Stream ist gerade nicht erreichbar.';
+  const msg = err && typeof err.message === 'string' ? err.message.trim() : '';
+  if (!msg) return fallback;
+  if (msg.length > 200) return fallback;
+  if (msg.includes('<') || msg.includes('&')) return fallback;
+  return msg.endsWith('.') ? msg : `${msg}.`;
+}
+
 const PlayChannelHandler = {
   canHandle(handlerInput) {
     return (
@@ -30,9 +47,10 @@ const PlayChannelHandler = {
     try {
       stream = await channel.resolveStream();
     } catch (err) {
-      console.log(`Stream nicht verfuegbar: ${channel.displayName} - ${err.message}`);
+      const reason = friendlyErrorMessage(err);
+      console.log(`Stream nicht verfuegbar: ${channel.displayName} - ${err && err.message ? err.message : err}`);
       return handlerInput.responseBuilder
-        .speak(`${channel.displayName} kann leider nicht gestartet werden. ${err.message} Moechtest du einen anderen Sender sehen?`)
+        .speak(`${channel.displayName} kann leider nicht gestartet werden. ${reason} Moechtest du einen anderen Sender sehen?`)
         .reprompt('Welchen Sender moechtest du sehen?')
         .withShouldEndSession(false)
         .getResponse();
@@ -48,3 +66,4 @@ const PlayChannelHandler = {
 };
 
 module.exports = PlayChannelHandler;
+module.exports.friendlyErrorMessage = friendlyErrorMessage;
