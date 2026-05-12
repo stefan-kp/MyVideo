@@ -3,8 +3,17 @@ services:
     build: .
     image: ghcr.io/stefan-kp/myvideo:latest
     env_file: .env
-    ports:
-      - "${PORT_EXTERNAL:-3377}:${PORT:-3000}"
+    # Host networking is required for RTSP/SAT>IP to work without packet loss.
+    # The Docker bridge namespace causes ~thousands of dropped RTP packets even
+    # with raised host sysctls (net.core.rmem_max). Bridge-mode packet loss was
+    # field-confirmed: docker-host probe shows ✓ OK with ~5 decode errors,
+    # while bridge-mode in the same container shows ~2900 missed RTP packets.
+    #
+    # Because host networking ignores `ports:`, the server listens directly on
+    # PORT (set in .env) on the host. The Cloudflare Tunnel must point at that
+    # same host port. Pick a PORT that doesn't collide with other containers
+    # on the same Pi (defaults to 3000 - change to 3377 or similar if needed).
+    network_mode: host
     volumes:
       - logos:/app/public/logos
       - data:/app/data
