@@ -1,6 +1,6 @@
 const Alexa = require('ask-sdk-core');
 const channels = require('../../lib/channels');
-const { friendlyErrorMessage } = require('./PlayChannelHandler');
+const { friendlyErrorMessage } = require('../../lib/streamErrorMessage');
 const { searchCategory } = require('../../lib/mediathek');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
 const { renderNewsList } = require('../../lib/aplHelper');

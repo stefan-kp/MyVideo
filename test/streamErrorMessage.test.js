@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * PlayChannelHandler.friendlyErrorMessage test
- * Locks the contract for translating thrown errors into user-speakable strings.
- * Run: node test/playChannelHandler.test.js
+ * streamErrorMessage test
+ * Locks the contract for translating thrown errors into user-speakable strings
+ * for Alexa.
+ * Run: node test/streamErrorMessage.test.js
  */
 process.env.JWT_SECRET = 'test-secret-1234567890abcdef1234567890abcdef';
 
-const { friendlyErrorMessage } = require('../skill/handlers/PlayChannelHandler');
+const { friendlyErrorMessage } = require('../lib/streamErrorMessage');
 
 let passed = 0, failed = 0;
 function assert(c, m) { if (c) { console.log(`  ✓ ${m}`); passed++; } else { console.error(`  ✗ ${m}`); failed++; } }
