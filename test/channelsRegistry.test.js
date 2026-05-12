@@ -11,6 +11,34 @@ const channels = require('../lib/channels');
 let passed = 0, failed = 0;
 function assert(c, m) { if (c) { console.log(`  ✓ ${m}`); passed++; } else { console.error(`  ✗ ${m}`); failed++; } }
 
+async function testFritzboxMerge() {
+  console.log('\n--- FRITZ!Box merge ---');
+  // Set FRITZ!Box env so channels.js loads the FRITZ!Box channels
+  process.env.FRITZBOX_HOST = '192.168.0.1';
+  process.env.FRITZBOX_USER = 'tv';
+  process.env.FRITZBOX_PASSWORD = 'fake';
+
+  // Reload module after env change
+  delete require.cache[require.resolve('../lib/channels')];
+  delete require.cache[require.resolve('../lib/sources/fritzboxSource')];
+  delete require.cache[require.resolve('../lib/fritzbox/session')];
+  const ch = require('../lib/channels');
+
+  const orf1 = ch.findChannel('orf eins');
+  assert(orf1, 'finds ORF 1 by synonym');
+  assert(orf1.source === 'fritzbox', 'ORF 1 is FRITZ!Box source');
+
+  const zdf = ch.findChannel('zdf');
+  assert(zdf, 'finds ZDF');
+  assert(zdf.constructor.name === 'ChannelWithFallback', 'ZDF is wrapped (has fallback)');
+  assert(zdf.primary.source === 'fritzbox', 'primary is fritzbox');
+  assert(zdf.fallback.source === 'hls', 'fallback is hls');
+
+  const grouped = ch.listChannels();
+  const totalCount = Object.values(grouped).flat().length;
+  assert(totalCount >= 26, `at least 26 channels (got ${totalCount})`);
+}
+
 (async () => {
   console.log('\n--- findChannel ---');
   const zdf = channels.findChannel('zdf');
@@ -30,6 +58,8 @@ function assert(c, m) { if (c) { console.log(`  ✓ ${m}`); passed++; } else { c
   console.log('\n--- findChannelById ---');
   const phx = channels.findChannelById('Phoenix_HD');
   assert(phx && phx.id === 'Phoenix_HD', 'finds Phoenix_HD by id');
+
+  await testFritzboxMerge();
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
