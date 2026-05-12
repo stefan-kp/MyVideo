@@ -121,12 +121,36 @@ async function testHlsSource() {
   assert(err && err.message.toLowerCase().includes('nicht erreichbar'), 'generic error on 5xx');
 }
 
+async function testFritzboxSource() {
+  console.log('\n--- FritzboxSource ---');
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-1234567890abcdef1234567890abcdef';
+  process.env.BASE_URL = 'http://localhost:3000';
+
+  const fritzboxSource = require('../lib/sources/fritzboxSource');
+  const fakeStreamer = {
+    async start(ch) { this.lastStart = ch; return '/stream/fritzbox/index.m3u8'; },
+  };
+  fritzboxSource._setStreamerForTest(fakeStreamer);
+
+  const ch = new (fritzboxSource.FritzboxSource)({
+    id: 'orf1', displayName: 'ORF 1', synonyms: [],
+    tunerId: '40200_1010', logoUrl: '', group: 'ORF',
+  });
+  const out = await ch.resolveStream();
+  assert(out.url.includes('/stream/fritzbox/index.m3u8'), 'returns fritzbox HLS path');
+  assert(out.url.includes('token='), 'URL has token');
+  assert(fakeStreamer.lastStart.id === 'orf1', 'streamer.start called with channel');
+
+  fritzboxSource._resetForTest();
+}
+
 (async () => {
   await testChannelBase();
   await testFallbackPrimarySucceeds();
   await testFallbackPrimaryFails();
   await testFallbackBothFail();
   await testHlsSource();
+  await testFritzboxSource();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();

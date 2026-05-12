@@ -118,6 +118,20 @@ const adapter = new ExpressAdapter(skill, true, true);
 
 app.post('/alexa', adapter.getRequestHandlers());
 
+// --- FFmpeg cleanup on shutdown ---
+const fritzboxSourceModule = require('./lib/sources/fritzboxSource');
+async function gracefulShutdown(signal) {
+  console.log(`Empfangen: ${signal}, beende FFmpeg-Stream...`);
+  try {
+    if (fritzboxSourceModule.shutdown) await fritzboxSourceModule.shutdown();
+  } catch (e) {
+    console.error('Shutdown error:', e.message);
+  }
+  process.exit(0);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 // --- Start Server ---
 app.listen(PORT, () => {
   const channelList = channels.listChannels();
