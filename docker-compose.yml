@@ -3,8 +3,15 @@ services:
     build: .
     image: ghcr.io/stefan-kp/myvideo:latest
     env_file: .env
-    ports:
-      - "${PORT_EXTERNAL:-3377}:${PORT:-3000}"
+    # network_mode: host is required for FRITZ!Box SAT>IP to work reliably.
+    # The default bridge network has a tiny UDP receive buffer (~208 KB)
+    # because Docker creates a fresh network namespace without inheriting the
+    # host's net.core.rmem_max sysctl. RTSP/UDP packets get dropped, causing
+    # H.264 corruption (PPS errors) on the Echo Show. Host networking lets the
+    # container use the host's larger rmem_max (set via /etc/sysctl.d/).
+    # Side-effect: ports are no longer remapped - PORT_EXTERNAL is ignored,
+    # the server listens directly on PORT (default 3000) on the host.
+    network_mode: host
     volumes:
       - logos:/app/public/logos
       - data:/app/data
