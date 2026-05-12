@@ -164,4 +164,25 @@ app.listen(PORT, () => {
 
   console.log(`  AI-Summary:     ${process.env.OPENROUTER_API_KEY ? 'verfuegbar (on-demand)' : 'deaktiviert (kein OPENROUTER_API_KEY)'}`);
 
+  // --- FRITZ!Box tuner verification (best-effort) ---
+  (async () => {
+    try {
+      const sessMod = require('./lib/fritzbox/session');
+      const session = sessMod.getInstance();
+      if (!session) {
+        console.log('  FRITZ!Box:     deaktiviert (kein FRITZBOX_HOST/USER/PASSWORD)');
+        return;
+      }
+      const { verifyTuners } = require('./lib/fritzbox/discovery');
+      const data = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'lib', 'fritzbox', 'channels.json'), 'utf8'));
+      const { ok, missing, fritzCount } = await verifyTuners(session, data.channels);
+      console.log(`  FRITZ!Box:     ${ok.length}/${data.channels.length} Sender verifiziert (FRITZ!Box hat ${fritzCount} Sender insgesamt)`);
+      if (missing.length > 0) {
+        console.warn(`  FRITZ!Box:     ${missing.length} Sender fehlen:`);
+        for (const m of missing) console.warn(`                  - ${m.displayName} (tunerId=${m.tunerId})`);
+      }
+    } catch (err) {
+      console.warn(`  FRITZ!Box:     Verifikation fehlgeschlagen: ${err.message}`);
+    }
+  })();
 });
