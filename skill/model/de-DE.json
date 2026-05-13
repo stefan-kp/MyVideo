@@ -191,6 +191,79 @@
           ]
         },
         {
+          "name": "SearchEverythingIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "suche {query}",
+            "finde {query}",
+            "suche nach {query}",
+            "gibt es {query}",
+            "hast du {query}"
+          ]
+        },
+        {
+          "name": "SearchContentIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "suche {query} lokal",
+            "suche {query} in meiner sammlung",
+            "suche lokal nach {query}",
+            "finde {query} lokal"
+          ]
+        },
+        {
+          "name": "ListNewContentIntent",
+          "slots": [
+            {
+              "name": "label",
+              "type": "CONTENT_LABEL"
+            }
+          ],
+          "samples": [
+            "was gibt es neues",
+            "zeige neues",
+            "was ist neu",
+            "neue {label}",
+            "was gibt es neues bei {label}",
+            "zeige neue {label}"
+          ]
+        },
+        {
+          "name": "PlayShowIntent",
+          "slots": [
+            {
+              "name": "show",
+              "type": "AMAZON.SearchQuery"
+            },
+            {
+              "name": "season",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "episode",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "spiele {show}",
+            "starte {show}",
+            "spiele {show} folge {episode}",
+            "spiele {show} episode {episode}",
+            "spiele {show} staffel {season} folge {episode}",
+            "weiterschauen {show}"
+          ]
+        },
+        {
           "name": "AMAZON.NextIntent",
           "samples": []
         },
@@ -542,6 +615,39 @@
                 "synonyms": [
                   "Tagesschau live",
                   "die Tagesschau"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CONTENT_LABEL",
+          "values": [
+            {
+              "name": {
+                "value": "Filme",
+                "synonyms": [
+                  "Film"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "Serien",
+                "synonyms": [
+                  "Serie",
+                  "Series",
+                  "TV"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "Eigene",
+                "synonyms": [
+                  "Eigene Aufnahmen",
+                  "Aufnahmen",
+                  "Privat"
                 ]
               }
             }
