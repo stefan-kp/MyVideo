@@ -127,12 +127,60 @@ async function testTranscodePipelineArgs() {
   fs.rmSync(streamDir, { recursive: true, force: true });
 }
 
+async function testTranscodeEnvOverrides() {
+  console.log('\n--- transcode honours FRITZBOX_* env overrides ---');
+  const saved = {
+    scale: process.env.FRITZBOX_OUTPUT_SCALE,
+    vbr: process.env.FRITZBOX_VIDEO_BITRATE,
+    abr: process.env.FRITZBOX_AUDIO_BITRATE,
+    preset: process.env.FRITZBOX_PRESET,
+  };
+  process.env.FRITZBOX_OUTPUT_SCALE = '640x360';
+  process.env.FRITZBOX_VIDEO_BITRATE = '900k';
+  process.env.FRITZBOX_AUDIO_BITRATE = '96k';
+  process.env.FRITZBOX_PRESET = 'fast';
+
+  const streamDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streamertest-'));
+  let spawned = null;
+  const s = new Streamer({
+    streamDir,
+    spawnFn: (cmd, args) => { spawned = args; return makeFakeProc(); },
+    waitForSegmentFn: async () => true,
+    resolveRtsp: async () => 'rtsp://x',
+    getPipeline: async () => 'transcode',
+  });
+  await s.start({ id: 'q', tunerId: 'tq', displayName: 'Q' });
+
+  assert(spawned.join(' ').includes('scale=640:360'), 'FRITZBOX_OUTPUT_SCALE applied');
+  const bvIdx = spawned.indexOf('-b:v');
+  assert(bvIdx > -1 && spawned[bvIdx + 1] === '900k', 'FRITZBOX_VIDEO_BITRATE applied');
+  const baIdx = spawned.indexOf('-b:a');
+  assert(baIdx > -1 && spawned[baIdx + 1] === '96k', 'FRITZBOX_AUDIO_BITRATE applied');
+  const presetIdx = spawned.indexOf('-preset');
+  assert(presetIdx > -1 && spawned[presetIdx + 1] === 'fast', 'FRITZBOX_PRESET applied');
+
+  await s.stop();
+  fs.rmSync(streamDir, { recursive: true, force: true });
+
+  // restore
+  for (const [k, v] of Object.entries({
+    FRITZBOX_OUTPUT_SCALE: saved.scale,
+    FRITZBOX_VIDEO_BITRATE: saved.vbr,
+    FRITZBOX_AUDIO_BITRATE: saved.abr,
+    FRITZBOX_PRESET: saved.preset,
+  })) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+}
+
 (async () => {
   await testStartTransitionsToPlaying();
   await testSwitchChannelTerminatesPrevious();
   await testStartSameChannelNoOp();
   await testWaitTimeoutFails();
   await testTranscodePipelineArgs();
+  await testTranscodeEnvOverrides();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();

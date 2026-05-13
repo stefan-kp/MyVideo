@@ -231,6 +231,29 @@ diagRouter.get('/session', async (req, res) => {
   }
 });
 
+// Current transcode + codec-probe settings (so you can verify your .env tuning).
+diagRouter.get('/settings', (req, res) => {
+  try {
+    const { getTranscodeSettings } = require('./lib/fritzbox/streamer');
+    res.json({
+      transcode: getTranscodeSettings(),
+      audio: {
+        pipelineOverride: process.env.FRITZBOX_PIPELINE || null,
+        audioBitrate: process.env.FRITZBOX_AUDIO_BITRATE || '128k',
+      },
+      tunable: {
+        FRITZBOX_OUTPUT_SCALE: 'WxH for transcode output, e.g. 960x540 (default), 640x360 for low-end Echo Show',
+        FRITZBOX_VIDEO_BITRATE: 'e.g. 1500k (default), 1000k, 800k',
+        FRITZBOX_AUDIO_BITRATE: 'e.g. 128k (default), 96k',
+        FRITZBOX_PRESET: 'libx264 preset: veryfast (default), fast, medium',
+        FRITZBOX_PIPELINE: 'set to "copy" to opt H.264 sources into stream-copy mode (lower CPU, less robust)',
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Index of available diag endpoints (so you don't have to remember the list).
 diagRouter.get('/', (req, res) => {
   res.json({
@@ -240,6 +263,7 @@ diagRouter.get('/', (req, res) => {
       'GET /diag/segments',
       'GET /diag/audio/:channelId',
       'GET /diag/session',
+      'GET /diag/settings',
     ],
     note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
   });
