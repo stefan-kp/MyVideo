@@ -9,6 +9,7 @@ const channels = require('./lib/channels');
 const hlsProxy = require('./lib/hlsProxy');
 const orfService = require('./lib/orfService');
 const { debug, debugJson } = require('./lib/debug');
+const contentService = require('./lib/content/service');
 
 const LaunchHandler = require('./skill/handlers/LaunchHandler');
 const PlayNewsHandler = require('./skill/handlers/PlayNewsHandler');
@@ -112,6 +113,24 @@ fritzboxStreamRouter.use(express.static(path.join(__dirname, 'stream'), {
 }));
 
 app.use('/stream', fritzboxStreamRouter);
+
+// --- Local content direct-play ---
+const contentRouter = express.Router();
+contentRouter.use(authMiddleware());
+
+// /content/<id>/file.mp4  -- direct stream of the local file
+// Note: <id> contains '/' (e.g. "filme/inception-2010"), so we use a wildcard.
+contentRouter.get(/^\/(.+)\/file\.mp4$/, (req, res) => {
+  if (!contentService.isEnabled()) return res.status(503).json({ error: 'content not configured' });
+  const id = req.params[0];
+  const entry = contentService.getIndex().findById(id);
+  if (!entry) return res.status(404).json({ error: `unknown content id: ${id}` });
+  if (req.tokenPayload?.sub !== id) {
+    return res.status(403).json({ error: 'token mismatch' });
+  }
+  res.sendFile(entry.path);
+});
+app.use('/content', contentRouter);
 
 // --- Diagnostics (LAN-only) ---
 // All /diag/* endpoints reject requests from public IPs. Cloudflare-Tunnel
@@ -260,6 +279,54 @@ diagRouter.get('/settings', (req, res) => {
   }
 });
 
+// Local content endpoints.
+diagRouter.get('/content/stats', (req, res) => {
+  if (!contentService.isEnabled()) return res.json({ enabled: false });
+  const idx = contentService.getIndex();
+  const cfg = contentService.getConfig();
+  const byLabel = {};
+  for (const e of idx.all()) {
+    byLabel[e.pathLabel] = (byLabel[e.pathLabel] || 0) + 1;
+  }
+  res.json({
+    enabled: true,
+    totalEntries: idx.count(),
+    scannedAt: idx.scannedAt,
+    perLabel: byLabel,
+    config: cfg.paths.map(p => ({ label: p.label, path: p.path, newerThanDays: p.newerThanDays })),
+  });
+});
+
+diagRouter.get('/content/search', (req, res) => {
+  if (!contentService.isEnabled()) return res.status(503).json({ error: 'disabled' });
+  const q = req.query.q || '';
+  const { searchLocal } = require('./lib/content/search');
+  const hits = searchLocal(contentService.getIndex().all(), q, { limit: 20 });
+  res.json({ query: q, count: hits.length, results: hits });
+});
+
+diagRouter.get('/content/item/:id(*)', (req, res) => {
+  if (!contentService.isEnabled()) return res.status(503).json({ error: 'disabled' });
+  const entry = contentService.getIndex().findById(req.params.id);
+  if (!entry) return res.status(404).json({ error: 'not found' });
+  res.json(entry);
+});
+
+diagRouter.post('/content/reindex', async (req, res) => {
+  if (!contentService.isEnabled()) return res.status(503).json({ error: 'disabled' });
+  try {
+    const result = await contentService.rescan();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+diagRouter.get('/content/config', (req, res) => {
+  if (!contentService.isEnabled()) return res.status(503).json({ error: 'disabled' });
+  res.json(contentService.getConfig());
+});
+
 // Index of available diag endpoints (so you don't have to remember the list).
 diagRouter.get('/', (req, res) => {
   res.json({
@@ -270,6 +337,11 @@ diagRouter.get('/', (req, res) => {
       'GET /diag/audio/:channelId',
       'GET /diag/session',
       'GET /diag/settings',
+      'GET /diag/content/stats',
+      'GET /diag/content/search?q=...',
+      'GET /diag/content/item/:id',
+      'POST /diag/content/reindex',
+      'GET /diag/content/config',
     ],
     note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
   });
