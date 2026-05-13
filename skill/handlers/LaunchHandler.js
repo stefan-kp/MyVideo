@@ -71,7 +71,29 @@ const LaunchHandler = {
       })
       .filter(Boolean);
 
-    renderLaunchScreen(handlerInput, sections, orfLogo, liveTVChannels);
+    // Recent content for homepage row (smart-mix: 1 per show, newest 6)
+    let recentContent = [];
+    try {
+      const contentService = require('../../lib/content/service');
+      if (contentService.isEnabled()) {
+        const { findNewest } = require('../../lib/content/search');
+        const newest = findNewest(contentService.getIndex().all(), {
+          limit: 6, uniquePerShow: true, newerThanDaysOnly: true,
+          pathConfigs: contentService.getConfig().paths,
+        });
+        recentContent = newest.map(e => ({
+          id: e.id,
+          label: e.pathLabel,
+          title: e.type === 'episode'
+            ? `${e.show} S${String(e.season || 0).padStart(2, '0')}E${String(e.episode || 0).padStart(2, '0')}`
+            : (e.title || e.filename),
+        }));
+      }
+    } catch (err) {
+      console.warn('LaunchHandler: recentContent build failed:', err.message);
+    }
+
+    renderLaunchScreen(handlerInput, sections, orfLogo, liveTVChannels, recentContent);
 
     return handlerInput.responseBuilder
       .speak(speech)
