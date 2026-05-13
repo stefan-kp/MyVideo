@@ -69,6 +69,47 @@
                 ]
               },
               {
+                "type": "Container",
+                "width": "100%",
+                "direction": "row",
+                "alignItems": "center",
+                "paddingBottom": "10dp",
+                "when": "${launchData.properties.recentContent && launchData.properties.recentContent.length > 0}",
+                "data": "${launchData.properties.recentContent}",
+                "items": [
+                  {
+                    "type": "TouchWrapper",
+                    "onPress": [
+                      {
+                        "type": "SendEvent",
+                        "arguments": ["selectContent", "${data.id}"]
+                      }
+                    ],
+                    "items": [
+                      {
+                        "type": "Frame",
+                        "backgroundColor": "rgba(76,195,247,0.15)",
+                        "borderRadius": "8dp",
+                        "paddingLeft": "10dp",
+                        "paddingRight": "10dp",
+                        "paddingTop": "6dp",
+                        "paddingBottom": "6dp",
+                        "marginRight": "6dp",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "items": [
+                              { "type": "Text", "text": "${data.label}", "color": "#4FC3F7", "fontSize": "14dp" },
+                              { "type": "Text", "text": "${data.title}", "color": "white", "fontSize": "16dp", "maxLines": 2 }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
                 "type": "Sequence",
                 "width": "100%",
                 "grow": 1,
