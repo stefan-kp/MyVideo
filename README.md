@@ -111,6 +111,62 @@ Wenn dein Server im selben Netz wie eine FRITZ!Box mit DVB-C-Funktion steht, kan
 - Sender mit oeffentlichem HLS (ARD, ZDF, 3sat, Phoenix, Tagesschau24, ARD alpha, ONE, ZDFinfo) fallen automatisch auf den oeffentlichen Stream zurueck, wenn die FRITZ!Box offline ist
 - Sender ohne oeffentliche Quelle (ORF 1/2/III, ServusTV, ATV, RTL/Pro7/SAT.1, BBC World News, ...) sind dann kurz nicht verfuegbar
 
+### Lokale Inhalte (NAS-Filme, optional)
+
+Wenn du Filme oder Serien auf einer Festplatte / einem NAS hast, kann der Skill diese durchsuchen und abspielen.
+
+**Setup:**
+
+1. Mounte den Ordner read-only in den Container - in `docker-compose.yml` den auskommentierten Eintrag aktivieren und Host-Pfad anpassen:
+   ```yaml
+   - /mnt/nas/videos:/content:ro
+   ```
+
+2. Kopiere die Beispiel-Konfig und passe die Pfade an:
+   ```bash
+   cp config/content-paths.example.json config/content-paths.json
+   nano config/content-paths.json
+   ```
+
+3. `docker compose down && docker compose up -d`
+
+**Sprachbefehle:**
+
+| Befehl | Beschreibung |
+|---|---|
+| "Suche Tatort" | Sucht lokal **und** in der Mediathek |
+| "Suche Tatort lokal" | Sucht nur in deiner Sammlung |
+| "Suche Tatort in der Mediathek" | Wie bisher, nur Mediathek |
+| "Was gibt es Neues" | Zeigt die zuletzt hinzugefuegten Files |
+| "Was gibt es Neues bei Filmen" | Filtert nach Pfad-Label |
+| "Spiele Better Call Saul" | Spielt die zuletzt hinzugefuegte Folge |
+| "Spiele Better Call Saul Folge 5" | Spezifische Folge |
+| "Spiele Better Call Saul Staffel 3 Folge 7" | Spezifische Staffel + Folge |
+
+**Konfiguration (`config/content-paths.json`):**
+
+| Feld | Beschreibung |
+|---|---|
+| `label` | Anzeigename, auch im Voice-Slot ("Filme", "Serien", "Eigene") |
+| `path` | absoluter Container-Pfad |
+| `newerThanDays` | Filter fuer "Was gibt's Neues" (null = alle) |
+| `recursive` | Unterverzeichnisse durchsuchen |
+| `type` | "movie", "episode" oder "auto" |
+
+**Direkt-Play vs. Transcode:** H.264/AAC/MP4-Dateien werden direkt ausgeliefert (Echo Show kann pausieren und spulen). MKV/HEVC/AC3 etc. werden on-the-fly mit FFmpeg konvertiert.
+
+**Diagnose-Endpoints (LAN-only):**
+
+```
+GET  /diag/content/stats
+GET  /diag/content/search?q=...
+GET  /diag/content/item/:id
+POST /diag/content/reindex
+GET  /diag/content/config
+```
+
+Test-Script auf dem Pi: `node scripts/test-content.js scan|list|newest|search <q>|play <id>`
+
 ## Alexa Skill einrichten
 
 ### Automatisch (empfohlen)
