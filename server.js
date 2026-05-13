@@ -16,6 +16,7 @@ const PlayNewsHandler = require('./skill/handlers/PlayNewsHandler');
 const { SummaryHandler, SummaryYesHandler, SummaryNoHandler, SummaryDetailHandler } = require('./skill/handlers/SummaryHandler');
 const PlayChannelHandler = require('./skill/handlers/PlayChannelHandler');
 const SearchMediathekHandler = require('./skill/handlers/SearchMediathekHandler');
+const SearchContentHandler = require('./skill/handlers/SearchContentHandler');
 const PlayMediathekResultHandler = require('./skill/handlers/PlayMediathekResultHandler');
 const PlayCategoryHandler = require('./skill/handlers/PlayCategoryHandler');
 const PlayVideoHandler = require('./skill/handlers/PlayVideoHandler');
@@ -380,6 +381,7 @@ const skillBuilder = Alexa.SkillBuilders.custom()
     SummaryDetailHandler,
     PlayChannelHandler,
     SearchMediathekHandler,
+    SearchContentHandler,
     PlayMediathekResultHandler,
     PlayCategoryHandler,
     PlayVideoHandler,
