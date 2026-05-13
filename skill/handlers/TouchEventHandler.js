@@ -26,6 +26,10 @@ const TouchEventHandler = {
       return handleSelectCategory(handlerInput, args[1]);
     }
 
+    if (action === 'selectContent') {
+      return handleSelectContent(handlerInput, args[1]);
+    }
+
     console.log('TouchEvent: unbekannte Aktion', args);
     return handlerInput.responseBuilder
       .speak('Das habe ich nicht verstanden.')
@@ -159,6 +163,35 @@ async function handleSelectCategory(handlerInput, categoryId) {
     .speak(speech)
     .reprompt('Sage eine Nummer.')
     .withShouldEndSession(false)
+    .getResponse();
+}
+
+async function handleSelectContent(handlerInput, contentId) {
+  const contentService = require('../../lib/content/service');
+  const contentSource = require('../../lib/content/contentSource');
+  if (!contentService.isEnabled()) {
+    return handlerInput.responseBuilder.speak('Sammlung nicht konfiguriert.').getResponse();
+  }
+  const entry = contentService.getIndex().findById(contentId);
+  if (!entry) {
+    return handlerInput.responseBuilder.speak('Eintrag nicht gefunden.').getResponse();
+  }
+  let stream;
+  try {
+    stream = await contentSource.resolveStream(contentId);
+  } catch (err) {
+    console.error('Touch selectContent error:', err.message);
+    return handlerInput.responseBuilder
+      .speak(`${entry.title} kann nicht gestartet werden. ${err.message}`)
+      .getResponse();
+  }
+  const spoken = entry.type === 'episode'
+    ? `${entry.show} Staffel ${entry.season} Folge ${entry.episode}`
+    : entry.title;
+  console.log(`Touch selectContent: ${entry.id} → ${stream.url}`);
+  return handlerInput.responseBuilder
+    .speak(`Starte ${spoken}.`)
+    .addVideoAppLaunchDirective(stream.url, entry.title || spoken, entry.show || entry.pathLabel)
     .getResponse();
 }
 
