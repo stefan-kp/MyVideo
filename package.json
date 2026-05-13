@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "tunnel": "bash scripts/start-tunnel.sh",
-    "test:fritzbox": "node scripts/test-fritzbox.js"
+    "test:fritzbox": "node scripts/test-fritzbox.js",
+    "test:content": "node scripts/test-content.js"
   },
   "dependencies": {
     "ask-sdk-core": "^2.14.0",
