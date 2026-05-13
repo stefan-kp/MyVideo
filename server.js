@@ -44,6 +44,7 @@ app.use('/proxy', hlsProxy);
 // otherwise HLS players (VLC, Echo Show) would fetch segments without
 // auth and get 401.
 const { authMiddleware } = require('./lib/auth');
+const { touchActivity } = require('./lib/sources/fritzboxSource');
 const fritzboxStreamRouter = express.Router();
 fritzboxStreamRouter.use(authMiddleware());
 fritzboxStreamRouter.use((req, res, next) => {
@@ -51,6 +52,10 @@ fritzboxStreamRouter.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+  // Every HLS request (playlist poll or segment fetch) counts as activity.
+  // Without this, FFmpeg keeps running for hours after the viewer stops
+  // watching, burning CPU on nothing.
+  try { touchActivity(); } catch {}
   next();
 });
 
