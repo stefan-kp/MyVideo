@@ -384,6 +384,24 @@ app.listen(PORT, () => {
 
   console.log(`  AI-Summary:     ${process.env.OPENROUTER_API_KEY ? 'verfuegbar (on-demand)' : 'deaktiviert (kein OPENROUTER_API_KEY)'}`);
 
+  // --- Local content (NAS) bootstrap ---
+  (async () => {
+    try {
+      const contentService = require('./lib/content/service');
+      const fritzboxSource = require('./lib/sources/fritzboxSource');
+      const streamer = fritzboxSource._getStreamerForContent
+        ? fritzboxSource._getStreamerForContent()
+        : null;
+      const configPath = process.env.CONTENT_CONFIG_PATH ||
+        require('path').join(__dirname, 'config', 'content-paths.json');
+      const ok = await contentService.init({ configPath, streamer });
+      if (ok) console.log(`  Local content: aktiviert (${contentService.getConfig().paths.length} Pfade)`);
+      else    console.log('  Local content: deaktiviert (keine config/content-paths.json)');
+    } catch (err) {
+      console.warn(`[content] init failed: ${err.message}`);
+    }
+  })();
+
   // --- FRITZ!Box tuner verification (best-effort) ---
   (async () => {
     try {
