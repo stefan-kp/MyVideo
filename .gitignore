@@ -7,3 +7,7 @@ stream/*.m3u8
 *.pem
 public/logos/
 data/
+test-stream/
+
+# Local content - user-specific paths and persistent index
+config/content-paths.json

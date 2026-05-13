@@ -1,0 +1,31 @@
+{
+  "_comment": "Copy to content-paths.json (gitignored) and adjust paths to match your bind-mounted NAS layout.",
+  "paths": [
+    {
+      "label": "Filme",
+      "path": "/content/movies",
+      "newerThanDays": 90,
+      "recursive": true,
+      "type": "movie"
+    },
+    {
+      "label": "Serien",
+      "path": "/content/tv",
+      "newerThanDays": 60,
+      "recursive": true,
+      "type": "episode"
+    },
+    {
+      "label": "Eigene",
+      "path": "/content/home",
+      "newerThanDays": null,
+      "recursive": true,
+      "type": "auto"
+    }
+  ],
+  "extensions": {
+    "directPlayCandidates": [".mp4", ".m4v"],
+    "transcodeOnly":         [".mkv", ".avi", ".mov", ".ts", ".webm", ".wmv"]
+  },
+  "excludePatterns": ["sample", "trailer", "_UNPACK_", "@eaDir", ".partial", ".DS_Store"]
+}
