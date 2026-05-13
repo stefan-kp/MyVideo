@@ -174,6 +174,59 @@ async function testTranscodeEnvOverrides() {
   }
 }
 
+async function testLocalSourceTranscode() {
+  console.log('\n--- start({ source: "local" }) passes inputPath to ffmpeg ---');
+  const streamDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streamertest-'));
+  let spawned = null;
+  const s = new Streamer({
+    streamDir,
+    spawnFn: (cmd, args) => { spawned = args; return makeFakeProc(); },
+    waitForSegmentFn: async () => true,
+    resolveRtsp: async () => { throw new Error('resolveRtsp must not be called for local'); },
+    getPipeline: async () => 'transcode',
+  });
+
+  await s.start({
+    source: 'local',
+    id: 'film-x',
+    displayName: 'Film X',
+    inputPath: '/path/to/Film X.mkv',
+  });
+
+  assert(spawned !== null, 'spawn called');
+  const idx = spawned.indexOf('-i');
+  assert(idx >= 0 && spawned[idx + 1] === '/path/to/Film X.mkv', 'inputPath passed as -i argument');
+  assert(!spawned.includes('-rtsp_transport'), 'no -rtsp_transport for local source');
+  const hlsListIdx = spawned.indexOf('-hls_list_size');
+  assert(hlsListIdx >= 0 && spawned[hlsListIdx + 1] === '30', 'hls_list_size=30 for local source');
+
+  await s.stop();
+  fs.rmSync(streamDir, { recursive: true, force: true });
+}
+
+async function testFritzboxSourceUnchanged() {
+  console.log('\n--- start({ source: "fritzbox" }) still produces RTSP args ---');
+  const streamDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streamertest-'));
+  let spawned = null;
+  const s = new Streamer({
+    streamDir,
+    spawnFn: (cmd, args) => { spawned = args; return makeFakeProc(); },
+    waitForSegmentFn: async () => true,
+    resolveRtsp: async (tid) => `rtsp://x/${tid}`,
+    getPipeline: async () => 'transcode',
+  });
+
+  await s.start({ source: 'fritzbox', id: 'orf1', tunerId: 'T1', displayName: 'ORF1' });
+  assert(spawned.includes('-rtsp_transport'), 'rtsp_transport present');
+  const idx = spawned.indexOf('-i');
+  assert(spawned[idx + 1] === 'rtsp://x/T1', 'resolved RTSP URL is input');
+  const hlsListIdx = spawned.indexOf('-hls_list_size');
+  assert(spawned[hlsListIdx + 1] === '3', 'hls_list_size=3 for fritzbox source');
+
+  await s.stop();
+  fs.rmSync(streamDir, { recursive: true, force: true });
+}
+
 (async () => {
   await testStartTransitionsToPlaying();
   await testSwitchChannelTerminatesPrevious();
@@ -181,6 +234,8 @@ async function testTranscodeEnvOverrides() {
   await testWaitTimeoutFails();
   await testTranscodePipelineArgs();
   await testTranscodeEnvOverrides();
+  await testLocalSourceTranscode();
+  await testFritzboxSourceUnchanged();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();
