@@ -202,7 +202,7 @@ diagRouter.get('/audio/:channelId', async (req, res) => {
     const resolver = new M3uResolver({ session });
     const rtspUrl = await resolver.getRtspUrl(ch.tunerId);
     const tracks = await probeAudioTracks(rtspUrl);
-    const pickIndex = pickAudioStream(tracks.map(t => ({
+    const relativeIdx = pickAudioStream(tracks.map(t => ({
       index: t.index,
       tags: { language: t.language },
       disposition: t.disposition,
@@ -210,8 +210,9 @@ diagRouter.get('/audio/:channelId', async (req, res) => {
     res.json({
       channelId, tunerId: ch.tunerId, rtspUrl,
       tracks,
-      pickedIndex: pickIndex,
-      pickedAudioMap: pickIndex == null ? null : `0:${pickIndex}`,
+      pickedAudioRelativeIndex: relativeIdx,
+      pickedContainerIndex: relativeIdx == null ? null : tracks[relativeIdx]?.index,
+      pickedAudioMap: relativeIdx == null ? null : `0:a:${relativeIdx}`,
       cache: getCacheSnapshot()[ch.tunerId] || null,
     });
   } catch (err) {
