@@ -1,4 +1,5 @@
 const Alexa = require('ask-sdk-core');
+const contentSource = require('../../lib/content/contentSource');
 
 const PlayMediathekResultHandler = {
   canHandle(handlerInput) {
@@ -7,21 +8,19 @@ const PlayMediathekResultHandler = {
       Alexa.getIntentName(handlerInput.requestEnvelope) === 'PlayMediathekResultIntent'
     );
   },
-  handle(handlerInput) {
+  async handle(handlerInput) {
     const number = parseInt(
       handlerInput.requestEnvelope.request.intent.slots.resultNumber?.value, 10
     );
-
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
     const results = sessionAttributes.mediathekResults;
 
     if (!results || results.length === 0) {
       return handlerInput.responseBuilder
-        .speak('Du hast noch nicht in der Mediathek gesucht. Sage zum Beispiel: suche Tatort in der Mediathek.')
-        .reprompt('Was moechtest du in der Mediathek suchen?')
+        .speak('Du hast noch nicht gesucht. Sage zum Beispiel: suche Tatort.')
+        .reprompt('Was moechtest du suchen?')
         .getResponse();
     }
-
     if (isNaN(number) || number < 1 || number > results.length) {
       return handlerInput.responseBuilder
         .speak(`Bitte sage eine Nummer zwischen 1 und ${results.length}.`)
@@ -37,11 +36,23 @@ const PlayMediathekResultHandler = {
       handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
     }
 
-    console.log(`Starte Mediathek: ${result.title} -> ${result.url}`);
+    let url = result.url;
+    if (result.source === 'local') {
+      try {
+        const stream = await contentSource.resolveStream(result.id);
+        url = stream.url;
+      } catch (err) {
+        console.error('PlayMediathekResult local resolveStream error:', err.message);
+        return handlerInput.responseBuilder
+          .speak(`${result.title} kann nicht gestartet werden. ${err.message}`)
+          .getResponse();
+      }
+    }
 
+    console.log(`Starte Result: ${result.title} (source=${result.source || 'mediathek'}) -> ${url}`);
     return handlerInput.responseBuilder
       .speak(`Starte ${result.title}.`)
-      .addVideoAppLaunchDirective(result.url, result.title, `${result.channel} - ${result.topic}`)
+      .addVideoAppLaunchDirective(url, result.title, `${result.channel || ''} - ${result.topic || ''}`)
       .getResponse();
   }
 };
