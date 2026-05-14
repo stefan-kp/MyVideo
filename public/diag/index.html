@@ -205,11 +205,16 @@
 
 <!-- ===== Search ===== -->
 <div class="tab-content" id="tab-search">
-  <div class="row" style="margin-bottom: 12px;">
-    <input type="text" id="search-q" placeholder="z.B. Tatort, Better Call Saul, Inception"
+  <div class="row" style="margin-bottom: 8px;">
+    <input type="text" id="search-q" placeholder="z.B. Tatort · Better Call Saul · Better Call Saul S04 · S04E06"
            autocomplete="off">
     <button class="primary" id="btn-search">Suchen (lokal)</button>
   </div>
+  <p class="small muted" style="margin-top: 0;">
+    Tipp: Show-Namen sind in der Trefferliste anklickbar (zeigt alle Folgen).
+    Filter wie <span class="mono">S04</span> (ganze Staffel) oder
+    <span class="mono">S04E06</span> (spezifische Folge) kombinierbar mit Suchbegriffen.
+  </p>
   <div class="card">
     <table id="search-table"><thead><tr>
       <th>ID</th><th>Typ</th><th>Titel</th><th style="width: 100px;"></th>
@@ -412,6 +417,31 @@ window.queueAddMediathek = async (entry) => {
   } catch (e) { toast('Fehler: ' + e.message, true); }
 };
 
+// Click a show name anywhere in the UI → jump to Search tab and search for it.
+// Used by clickable show links in Newest and Search result lists.
+window.searchByShow = (showName) => {
+  $('search-q').value = showName;
+  // Switch to Search tab
+  document.querySelectorAll('.tab-buttons button').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector('.tab-buttons button[data-tab="search"]');
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  $('tab-search').classList.add('active');
+  doSearch();
+};
+
+// Format an entry as HTML for tables. Show name is a clickable link that
+// triggers a new search; the episode/title part is plain text.
+function entryDisplayHtml(e) {
+  if (e.type === 'episode') {
+    const showSafe = (e.show || '').replace(/'/g, "\\'");
+    return `<a href="#" onclick="searchByShow('${escapeHtml(showSafe)}');return false;">${escapeHtml(e.show||'')}</a>`
+         + ` S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')}`
+         + ` – ${escapeHtml(e.title||'')}`;
+  }
+  return escapeHtml(e.title || e.filename);
+}
+
 // ===== Content =====
 let contentFilter = '';
 function buildContentFilters(labels) {
@@ -469,14 +499,11 @@ async function loadContentNewest() {
     window._lastNewest = {};
     const rows = (newest.results || []).map(e => {
       window._lastNewest[e.id] = e;
-      const title = e.type === 'episode'
-        ? `${escapeHtml(e.show||'')} S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')} – ${escapeHtml(e.title||'')}`
-        : escapeHtml(e.title || e.filename);
       return `
         <tr>
           <td class="mono small">${e.mtime ? e.mtime.slice(0,10) : '–'}</td>
           <td><span class="pill">${escapeHtml(e.pathLabel||'')}</span></td>
-          <td>${title}</td>
+          <td>${entryDisplayHtml(e)}</td>
           <td>
             <button class="sm" onclick="queueAddLocal(window._lastNewest['${escapeHtml(e.id)}'])">+Queue</button>
           </td>
@@ -549,14 +576,11 @@ async function doSearch() {
     window._lastSearch = {};
     const rows = (r.results || []).map(e => {
       window._lastSearch[e.id] = e;
-      const title = e.type === 'episode'
-        ? `${escapeHtml(e.show||'')} S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')} – ${escapeHtml(e.title||'')}`
-        : escapeHtml(e.title || e.filename);
       return `
         <tr>
           <td class="mono small">${escapeHtml(e.id)}</td>
           <td>${escapeHtml(e.type||'')}</td>
-          <td>${title}</td>
+          <td>${entryDisplayHtml(e)}</td>
           <td><button class="sm" onclick="queueAddLocal(window._lastSearch['${escapeHtml(e.id)}'])">+Queue</button></td>
         </tr>`;
     }).join('');

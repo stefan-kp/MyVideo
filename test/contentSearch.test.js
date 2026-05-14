@@ -76,5 +76,27 @@ assert(latest.season === 4 && latest.episode === 7, 'finds latest S04E07');
 const latestNone = findLatestEpisode(ENTRIES, 'nothing here');
 assert(latestNone == null, 'null when no show matches');
 
+console.log('\n--- searchLocal: episodes sorted by season/episode asc ---');
+let sorted = searchLocal(ENTRIES, 'Better Call Saul', { limit: 20 });
+assert(sorted.length === 3, '3 BCS episodes');
+assert(sorted[0].season === 3 && sorted[0].episode === 5, 'S03E05 first (oldest by season)');
+assert(sorted[1].season === 4 && sorted[1].episode === 6, 'S04E06 second');
+assert(sorted[2].season === 4 && sorted[2].episode === 7, 'S04E07 last');
+
+console.log('\n--- searchLocal: SxxEyy filter ---');
+let f = searchLocal(ENTRIES, 'Better Call Saul S04E06', { limit: 20 });
+assert(f.length === 1 && f[0].episode === 6 && f[0].season === 4,
+  'S04E06 filter narrows to single episode');
+
+console.log('\n--- searchLocal: Sxx filter only (season) ---');
+let s = searchLocal(ENTRIES, 'Better Call Saul S04', { limit: 20 });
+assert(s.length === 2, 'S04 returns 2 episodes');
+assert(s.every(e => e.season === 4), 'all season 4');
+
+console.log('\n--- searchLocal: pure SxxEyy without show name ---');
+let pure = searchLocal(ENTRIES, 's04e06', { limit: 20 });
+assert(pure.length === 1 && pure[0].id === 'serien/better-call-saul/s04e06',
+  'pure SxxEyy finds the matching episode across all shows');
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

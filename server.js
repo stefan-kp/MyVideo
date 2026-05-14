@@ -307,7 +307,9 @@ diagRouter.get('/content/search', (req, res) => {
   if (!contentService.isEnabled()) return res.status(503).json({ error: 'disabled' });
   const q = req.query.q || '';
   const { searchLocal } = require('./lib/content/search');
-  const hits = searchLocal(contentService.getIndex().all(), q, { limit: 20 });
+  // Higher default limit so a whole series fits (Better Call Saul has 63 episodes).
+  const limit = Math.min(parseInt(req.query.limit, 10) || 200, 500);
+  const hits = searchLocal(contentService.getIndex().all(), q, { limit });
   res.json({ query: q, count: hits.length, results: hits });
 });
 
