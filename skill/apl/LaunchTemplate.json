@@ -31,6 +31,61 @@
               {
                 "type": "Container",
                 "width": "100%",
+                "paddingBottom": "12dp",
+                "when": "${launchData.properties.queue && launchData.properties.queue.length > 0}",
+                "items": [
+                  {
+                    "type": "Text",
+                    "text": "Deine Queue (${launchData.properties.queue.length})",
+                    "color": "#79c0ff",
+                    "fontSize": "16dp",
+                    "fontWeight": "bold",
+                    "paddingBottom": "6dp"
+                  },
+                  {
+                    "type": "Container",
+                    "width": "100%",
+                    "direction": "row",
+                    "alignItems": "center",
+                    "data": "${launchData.properties.queue}",
+                    "items": [
+                      {
+                        "type": "TouchWrapper",
+                        "onPress": [
+                          {
+                            "type": "SendEvent",
+                            "arguments": ["selectQueueItem", "${data.id}"]
+                          }
+                        ],
+                        "items": [
+                          {
+                            "type": "Frame",
+                            "backgroundColor": "rgba(31,111,235,0.25)",
+                            "borderRadius": "8dp",
+                            "paddingLeft": "12dp",
+                            "paddingRight": "12dp",
+                            "paddingTop": "8dp",
+                            "paddingBottom": "8dp",
+                            "marginRight": "8dp",
+                            "items": [
+                              {
+                                "type": "Container",
+                                "items": [
+                                  { "type": "Text", "text": "${data.subtitle}", "color": "#79c0ff", "fontSize": "12dp" },
+                                  { "type": "Text", "text": "${data.title}", "color": "white", "fontSize": "16dp", "maxLines": 2 }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "width": "100%",
                 "direction": "row",
                 "alignItems": "center",
                 "paddingBottom": "12dp",

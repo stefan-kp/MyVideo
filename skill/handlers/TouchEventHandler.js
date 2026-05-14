@@ -30,6 +30,10 @@ const TouchEventHandler = {
       return handleSelectContent(handlerInput, args[1]);
     }
 
+    if (action === 'selectQueueItem') {
+      return handleSelectQueueItem(handlerInput, args[1]);
+    }
+
     console.log('TouchEvent: unbekannte Aktion', args);
     return handlerInput.responseBuilder
       .speak('Das habe ich nicht verstanden.')
@@ -192,6 +196,39 @@ async function handleSelectContent(handlerInput, contentId) {
   return handlerInput.responseBuilder
     .speak(`Starte ${spoken}.`)
     .addVideoAppLaunchDirective(stream.url, entry.title || spoken, entry.show || entry.pathLabel)
+    .getResponse();
+}
+
+async function handleSelectQueueItem(handlerInput, queueItemId) {
+  const queueModule = require('../../lib/queue');
+  const contentSource = require('../../lib/content/contentSource');
+  const queue = queueModule.getInstance();
+
+  // Find + remove the specific item (not necessarily the head)
+  const item = queue.list().find(i => i.id === queueItemId);
+  if (!item) {
+    return handlerInput.responseBuilder.speak('Eintrag nicht in der Queue gefunden.').getResponse();
+  }
+  queue.remove(queueItemId);
+
+  let url;
+  try {
+    if (item.source === 'local') {
+      const stream = await contentSource.resolveStream(item.contentId);
+      url = stream.url;
+    } else {
+      url = item.url;
+    }
+  } catch (err) {
+    console.error('Touch selectQueueItem error:', err.message);
+    return handlerInput.responseBuilder
+      .speak(`${item.title} kann nicht gestartet werden. ${err.message}`)
+      .getResponse();
+  }
+  console.log(`Touch selectQueueItem: ${item.id} (${item.source}) → ${url}`);
+  return handlerInput.responseBuilder
+    .speak(`Starte ${item.title}.`)
+    .addVideoAppLaunchDirective(url, item.title, item.subtitle || '')
     .getResponse();
 }
 

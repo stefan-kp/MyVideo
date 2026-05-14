@@ -93,7 +93,21 @@ const LaunchHandler = {
       console.warn('LaunchHandler: recentContent build failed:', err.message);
     }
 
-    renderLaunchScreen(handlerInput, sections, orfLogo, liveTVChannels, recentContent);
+    // Watch queue for top-of-screen row
+    let queueRow = [];
+    try {
+      const queueModule = require('../../lib/queue');
+      const items = queueModule.getInstance().peek(6);
+      queueRow = items.map(it => ({
+        id: it.id,
+        title: it.title,
+        subtitle: it.subtitle || (it.source === 'local' ? 'Lokal' : 'Mediathek'),
+      }));
+    } catch (err) {
+      console.warn('LaunchHandler: queue build failed:', err.message);
+    }
+
+    renderLaunchScreen(handlerInput, sections, orfLogo, liveTVChannels, recentContent, queueRow);
 
     return handlerInput.responseBuilder
       .speak(speech)
