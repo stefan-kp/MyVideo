@@ -350,6 +350,111 @@ diagRouter.get('/content/newest', (req, res) => {
   res.json({ count: results.length, results });
 });
 
+// --- YouTube playlist endpoints (LAN-only) ---
+// Playlists are configured via the web UI, crawled on demand, and downloaded
+// per video. Downloaded MP4s land in data/youtube/<slug>/ and are picked up
+// by the content scanner so they become regular ContentEntries.
+const youtubePlaylists = require('./lib/youtube/playlists');
+const youtubeCrawler = require('./lib/youtube/crawler');
+const youtubeDownloader = require('./lib/youtube/downloader');
+const ytFs = require('fs');
+const ytJson = express.json();
+const ytDownloadLocks = new Map(); // playlistId -> Promise (one download at a time per playlist)
+
+function getYoutubeDir() {
+  return contentService.YOUTUBE_DIR || path.join(__dirname, 'data', 'youtube');
+}
+
+diagRouter.get('/youtube/playlists', (req, res) => {
+  res.json({ playlists: youtubePlaylists.getInstance().list() });
+});
+
+diagRouter.post('/youtube/playlists', ytJson, (req, res) => {
+  try {
+    const item = youtubePlaylists.getInstance().add(req.body || {});
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+diagRouter.delete('/youtube/playlists/:id', (req, res) => {
+  const pls = youtubePlaylists.getInstance();
+  const pl = pls.findById(req.params.id);
+  if (!pl) return res.status(404).json({ error: 'not found' });
+  // Best-effort: remove the slug directory so cleanup doesn't have to chase it.
+  try {
+    const dir = path.join(getYoutubeDir(), pl.slug);
+    if (ytFs.existsSync(dir)) ytFs.rmSync(dir, { recursive: true, force: true });
+  } catch (err) {
+    console.warn(`[youtube] could not remove ${pl.slug} dir: ${err.message}`);
+  }
+  pls.remove(req.params.id);
+  res.json({ ok: true });
+});
+
+diagRouter.post('/youtube/playlists/:id/crawl', async (req, res) => {
+  const pls = youtubePlaylists.getInstance();
+  const pl = pls.findById(req.params.id);
+  if (!pl) return res.status(404).json({ error: 'not found' });
+  try {
+    const videos = await youtubeCrawler.crawlPlaylist(pl.url);
+    pls.updateVideos(pl.id, videos);
+    res.json({ ok: true, playlist: pls.findById(pl.id) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+diagRouter.post('/youtube/playlists/:id/download/:videoId', async (req, res) => {
+  const pls = youtubePlaylists.getInstance();
+  const pl = pls.findById(req.params.id);
+  if (!pl) return res.status(404).json({ error: 'playlist not found' });
+  const video = (pl.videos || []).find(v => v.videoId === req.params.videoId);
+  if (!video) return res.status(404).json({ error: 'video not in playlist' });
+
+  // Already downloaded and file still there? Just return the existing content id.
+  if (video.downloaded && video.downloadedPath && ytFs.existsSync(video.downloadedPath)) {
+    return res.json({ ok: true, alreadyDownloaded: true, path: video.downloadedPath });
+  }
+
+  // Per-playlist mutex so two concurrent downloads in the same slug-dir
+  // can't race over yt-dlp's tempfiles.
+  if (ytDownloadLocks.has(pl.id)) {
+    return res.status(409).json({ error: 'another download for this playlist is in progress' });
+  }
+
+  const outDir = path.join(getYoutubeDir(), pl.slug);
+  const dlPromise = (async () => {
+    const filePath = await youtubeDownloader.downloadVideo({
+      videoId: video.videoId,
+      outDir,
+    });
+    pls.markDownloaded(pl.id, video.videoId, filePath);
+    // Rescan so the new MP4 shows up in the content index immediately.
+    if (contentService.isEnabled()) {
+      await contentService.rescan().catch(err => console.warn(`[youtube] post-download rescan: ${err.message}`));
+    }
+    return filePath;
+  })();
+
+  ytDownloadLocks.set(pl.id, dlPromise);
+  try {
+    const filePath = await dlPromise;
+    // Try to find the contentId so the caller can immediately POST /diag/queue
+    let contentId = null;
+    if (contentService.isEnabled()) {
+      const entry = contentService.getIndex().all().find(e => e.path === filePath);
+      if (entry) contentId = entry.id;
+    }
+    res.json({ ok: true, path: filePath, contentId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    ytDownloadLocks.delete(pl.id);
+  }
+});
+
 // Web UI for diagnostics. LAN-only via the diagRouter middleware.
 diagRouter.get('/ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'diag', 'index.html'));
@@ -427,6 +532,11 @@ diagRouter.get('/', (req, res) => {
       'POST /diag/queue/:id/up',
       'POST /diag/queue/:id/down',
       'POST /diag/queue/clear',
+      'GET /diag/youtube/playlists',
+      'POST /diag/youtube/playlists',
+      'DELETE /diag/youtube/playlists/:id',
+      'POST /diag/youtube/playlists/:id/crawl',
+      'POST /diag/youtube/playlists/:id/download/:videoId',
     ],
     note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
   });
@@ -562,6 +672,26 @@ app.listen(PORT, () => {
       else    console.log('  Local content: deaktiviert (keine config/content-paths.json)');
     } catch (err) {
       console.warn(`[content] init failed: ${err.message}`);
+    }
+  })();
+
+  // --- YouTube cleanup scheduler (deletes downloaded MP4s older than
+  //     cleanupDays unless they're currently in the queue) ---
+  (async () => {
+    try {
+      const youtubeCleanup = require('./lib/youtube/cleanup');
+      const playlistsMod = require('./lib/youtube/playlists');
+      const queueMod = require('./lib/queue');
+      const youtubeDir = contentService.YOUTUBE_DIR || require('path').join(__dirname, 'data', 'youtube');
+      youtubeCleanup.scheduleCleanup({
+        rootDir: youtubeDir,
+        playlists: playlistsMod.getInstance(),
+        contentService,
+        queue: queueMod.getInstance(),
+      });
+      console.log(`  YouTube:       cleanup scheduled (rootDir=${youtubeDir})`);
+    } catch (err) {
+      console.warn(`[youtube] cleanup scheduler init failed: ${err.message}`);
     }
   })();
 
