@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>MyVideo Diagnose</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  body {
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #0e1116; color: #e6edf3; margin: 0; padding: 16px 24px 80px;
+    max-width: 1100px; margin-left: auto; margin-right: auto;
+  }
+  h1 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  h2 { margin: 28px 0 8px; font-size: 14px; font-weight: 600;
+       letter-spacing: 0.04em; text-transform: uppercase; color: #8b949e; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button {
+    background: #21262d; color: #e6edf3; border: 1px solid #30363d;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { background: #30363d; }
+  button.primary { background: #1f6feb; border-color: #1f6feb; }
+  button.primary:hover { background: #388bfd; }
+  input[type=text] {
+    background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+    padding: 6px 10px; border-radius: 6px; font-size: 13px; min-width: 280px;
+  }
+  input:focus { outline: none; border-color: #58a6ff; }
+  .pill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    background: #21262d; font-size: 11px; color: #8b949e; margin-right: 4px;
+  }
+  .pill.ok { background: #0d4429; color: #7ee29c; }
+  .pill.warn { background: #4a2d0e; color: #f0b86e; }
+  .pill.err { background: #4a1d1d; color: #f1857a; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 13px; }
+  th { text-align: left; padding: 6px 8px; color: #8b949e; font-weight: 600;
+       border-bottom: 1px solid #30363d; }
+  td { padding: 6px 8px; border-bottom: 1px solid #1e2329; vertical-align: top; }
+  tr:hover td { background: #161b22; }
+  .muted { color: #8b949e; }
+  .mono { font-family: ui-monospace, "SF Mono", Monaco, Menlo, monospace; font-size: 12px; }
+  pre { background: #161b22; padding: 10px 12px; border-radius: 6px;
+        overflow-x: auto; font-size: 12px; line-height: 1.4; }
+  .card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 12px;
+  }
+  .card-title { font-weight: 600; margin-bottom: 6px; }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .stat { font-size: 24px; font-weight: 600; }
+  .stat-label { font-size: 11px; color: #8b949e; text-transform: uppercase;
+                letter-spacing: 0.05em; margin-bottom: 4px; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .tab-buttons { display: flex; gap: 4px; margin-bottom: 12px;
+                 border-bottom: 1px solid #30363d; }
+  .tab-buttons button {
+    background: transparent; border: none; border-bottom: 2px solid transparent;
+    padding: 8px 14px; border-radius: 0; color: #8b949e;
+  }
+  .tab-buttons button.active { color: #e6edf3; border-bottom-color: #1f6feb; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .small { font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>MyVideo Diagnose</h1>
+<p class="muted small" id="server-banner">Lade Status...</p>
+
+<div class="tab-buttons">
+  <button class="active" data-tab="overview">Übersicht</button>
+  <button data-tab="content">Lokale Sammlung</button>
+  <button data-tab="channels">Live-TV</button>
+  <button data-tab="stream">Stream-Zustand</button>
+  <button data-tab="search">Suche</button>
+</div>
+
+<!-- ===== Overview ===== -->
+<div class="tab-content active" id="tab-overview">
+  <div class="grid">
+    <div class="card">
+      <div class="stat-label">Lokale Files</div>
+      <div class="stat" id="stat-content">–</div>
+      <div class="small muted" id="stat-content-when">–</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Sender</div>
+      <div class="stat" id="stat-channels">–</div>
+      <div class="small muted">registriert</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">Stream</div>
+      <div class="stat" id="stat-stream">–</div>
+      <div class="small muted" id="stat-stream-detail">–</div>
+    </div>
+    <div class="card">
+      <div class="stat-label">FRITZ!Box</div>
+      <div class="stat" id="stat-fritz">–</div>
+      <div class="small muted" id="stat-fritz-detail">–</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Content ===== -->
+<div class="tab-content" id="tab-content">
+  <div class="row" style="margin-bottom: 12px;">
+    <button class="primary" id="btn-reindex">Neu indizieren</button>
+    <button id="btn-content-refresh">Aktualisieren</button>
+    <span class="small muted" id="content-status"></span>
+  </div>
+  <div class="card" id="content-config-card" style="display:none;">
+    <div class="card-title">Konfigurierte Pfade</div>
+    <table id="content-config-table"><thead><tr>
+      <th>Label</th><th>Pfad</th><th>NewerThan</th><th>Files</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-title">Neueste Files</div>
+    <table id="content-newest-table"><thead><tr>
+      <th>Datum</th><th>Pfad</th><th>Titel</th><th></th>
+    </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- ===== Channels ===== -->
+<div class="tab-content" id="tab-channels">
+  <div class="row" style="margin-bottom: 12px;">
+    <button id="btn-channels-refresh">Aktualisieren</button>
+  </div>
+  <div class="card">
+    <table id="channels-table"><thead><tr>
+      <th>Display</th><th>Gruppe</th><th>Source</th><th>ID</th>
+    </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- ===== Stream ===== -->
+<div class="tab-content" id="tab-stream">
+  <div class="row" style="margin-bottom: 12px;">
+    <button id="btn-stream-refresh">Aktualisieren</button>
+    <span class="small muted">Auto-refresh alle 3s</span>
+  </div>
+  <div class="card" id="stream-card">
+    <pre id="stream-pre" class="mono">Lade...</pre>
+  </div>
+</div>
+
+<!-- ===== Search ===== -->
+<div class="tab-content" id="tab-search">
+  <div class="row" style="margin-bottom: 12px;">
+    <input type="text" id="search-q" placeholder="z.B. Tatort, Better Call Saul, Inception"
+           autocomplete="off">
+    <button class="primary" id="btn-search">Suchen (lokal)</button>
+  </div>
+  <div class="card">
+    <table id="search-table"><thead><tr>
+      <th>ID</th><th>Typ</th><th>Titel</th><th></th>
+    </tr></thead><tbody><tr><td colspan="4" class="muted">Sage was du suchst...</td></tr></tbody></table>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function jget(url) {
+  const r = await fetch(url, { headers: { 'accept': 'application/json' } });
+  if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
+  return r.json();
+}
+async function jpost(url) {
+  const r = await fetch(url, { method: 'POST', headers: { 'accept': 'application/json' } });
+  if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
+  return r.json();
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fmtBytes(n) {
+  if (!n) return '0';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return n.toFixed(1) + ' ' + u[i];
+}
+function fmtDate(s) { return s ? s.slice(0, 16).replace('T', ' ') : '–'; }
+
+// ===== Tab routing =====
+document.querySelectorAll('.tab-buttons button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-buttons button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    $('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'channels') loadChannels();
+    if (btn.dataset.tab === 'content') loadContent();
+    if (btn.dataset.tab === 'stream') loadStream();
+  };
+});
+
+// ===== Overview =====
+async function loadOverview() {
+  $('server-banner').textContent = `Verbunden mit ${location.host}`;
+
+  try {
+    const stats = await jget('/diag/content/stats');
+    if (stats.enabled) {
+      $('stat-content').textContent = stats.totalEntries;
+      $('stat-content-when').textContent = 'Scan: ' + fmtDate(stats.scannedAt);
+    } else {
+      $('stat-content').textContent = 'aus';
+      $('stat-content-when').textContent = 'keine config/content-paths.json';
+    }
+  } catch (e) {
+    $('stat-content').textContent = '?';
+    $('stat-content-when').textContent = e.message;
+  }
+
+  try {
+    const ch = await jget('/diag/channels');
+    $('stat-channels').textContent = ch.count;
+  } catch (e) { $('stat-channels').textContent = '?'; }
+
+  try {
+    const s = await jget('/diag/stream-state');
+    if (s.current) {
+      $('stat-stream').textContent = s.state || 'PLAYING';
+      $('stat-stream-detail').textContent = (s.current.channelId || '') +
+        (s.current.runningForMs ? ' (' + Math.round(s.current.runningForMs/1000) + 's)' : '');
+    } else {
+      $('stat-stream').textContent = 'idle';
+      $('stat-stream-detail').textContent = 'kein aktiver Stream';
+    }
+  } catch (e) { $('stat-stream').textContent = '?'; }
+
+  try {
+    const sess = await jget('/diag/session');
+    if (sess.configured) {
+      $('stat-fritz').textContent = sess.sidPresent ? 'OK' : 'kein SID';
+      $('stat-fritz-detail').textContent = sess.user + '@' + sess.host;
+    } else {
+      $('stat-fritz').textContent = 'aus';
+      $('stat-fritz-detail').textContent = 'nicht konfiguriert';
+    }
+  } catch (e) { $('stat-fritz').textContent = '?'; }
+}
+
+// ===== Content =====
+async function loadContent() {
+  $('content-status').textContent = '';
+  try {
+    const stats = await jget('/diag/content/stats');
+    if (!stats.enabled) {
+      $('content-config-card').style.display = 'none';
+      $('content-newest-table').querySelector('tbody').innerHTML =
+        '<tr><td colspan="4" class="muted">Lokale Sammlung ist nicht konfiguriert. ' +
+        'Erstelle config/content-paths.json.</td></tr>';
+      return;
+    }
+    $('content-config-card').style.display = '';
+    const cfgRows = stats.config.map(p => `
+      <tr>
+        <td>${escapeHtml(p.label)}</td>
+        <td class="mono">${escapeHtml(p.path)}</td>
+        <td class="muted">${p.newerThanDays == null ? '–' : p.newerThanDays + ' Tage'}</td>
+        <td>${stats.perLabel[p.label] || 0}</td>
+      </tr>`).join('');
+    $('content-config-table').querySelector('tbody').innerHTML = cfgRows;
+    $('content-status').textContent = `${stats.totalEntries} Einträge, Scan: ${fmtDate(stats.scannedAt)}`;
+  } catch (e) {
+    $('content-status').textContent = 'Fehler: ' + e.message;
+  }
+
+  try {
+    const newest = await jget('/diag/content/newest?limit=20');
+    const rows = (newest.results || []).map(e => {
+      const title = e.type === 'episode'
+        ? `${escapeHtml(e.show||'')} S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')} – ${escapeHtml(e.title||'')}`
+        : escapeHtml(e.title || e.filename);
+      return `
+        <tr>
+          <td class="mono small">${e.mtime ? e.mtime.slice(0,10) : '–'}</td>
+          <td><span class="pill">${escapeHtml(e.pathLabel||'')}</span></td>
+          <td>${title}</td>
+          <td><button onclick="testPlay('${escapeHtml(e.id)}')">Test Play</button></td>
+        </tr>`;
+    }).join('');
+    $('content-newest-table').querySelector('tbody').innerHTML =
+      rows || '<tr><td colspan="4" class="muted">Keine Treffer</td></tr>';
+  } catch (e) {
+    $('content-newest-table').querySelector('tbody').innerHTML =
+      `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+
+$('btn-content-refresh').onclick = loadContent;
+$('btn-reindex').onclick = async () => {
+  $('content-status').textContent = 'Indizierung läuft...';
+  try {
+    const r = await jpost('/diag/content/reindex');
+    $('content-status').textContent = `Reindex OK: ${r.entries} Einträge in ${r.durationMs}ms`;
+    loadContent();
+  } catch (e) {
+    $('content-status').textContent = 'Reindex fehlgeschlagen: ' + e.message;
+  }
+};
+
+window.testPlay = async (id) => {
+  try {
+    const item = await jget('/diag/content/item/' + id);
+    alert('Item-Eintrag (siehe Konsole)\n\n' + JSON.stringify(item, null, 2).slice(0, 600));
+    console.log('Content-Item:', item);
+  } catch (e) {
+    alert('Fehler: ' + e.message);
+  }
+};
+
+// ===== Channels =====
+async function loadChannels() {
+  try {
+    const ch = await jget('/diag/channels');
+    const rows = (ch.channels || []).map(c => `
+      <tr>
+        <td>${escapeHtml(c.displayName)}</td>
+        <td><span class="pill">${escapeHtml(c.group||'')}</span></td>
+        <td class="mono small">${escapeHtml(c.source||'')}</td>
+        <td class="mono small muted">${escapeHtml(c.id)}</td>
+      </tr>`).join('');
+    $('channels-table').querySelector('tbody').innerHTML =
+      rows || '<tr><td colspan="4" class="muted">Keine Sender</td></tr>';
+  } catch (e) {
+    $('channels-table').querySelector('tbody').innerHTML =
+      `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+$('btn-channels-refresh').onclick = loadChannels;
+
+// ===== Stream =====
+let streamTimer = null;
+async function loadStream() {
+  try {
+    const s = await jget('/diag/stream-state');
+    $('stream-pre').textContent = JSON.stringify(s, null, 2);
+  } catch (e) {
+    $('stream-pre').textContent = 'Fehler: ' + e.message;
+  }
+}
+$('btn-stream-refresh').onclick = loadStream;
+setInterval(() => {
+  if (document.getElementById('tab-stream').classList.contains('active')) loadStream();
+}, 3000);
+
+// ===== Search =====
+$('btn-search').onclick = doSearch;
+$('search-q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+async function doSearch() {
+  const q = $('search-q').value.trim();
+  if (!q) return;
+  $('search-table').querySelector('tbody').innerHTML =
+    '<tr><td colspan="4" class="muted">Suche...</td></tr>';
+  try {
+    const r = await jget('/diag/content/search?q=' + encodeURIComponent(q));
+    const rows = (r.results || []).map(e => {
+      const title = e.type === 'episode'
+        ? `${escapeHtml(e.show||'')} S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')} – ${escapeHtml(e.title||'')}`
+        : escapeHtml(e.title || e.filename);
+      return `
+        <tr>
+          <td class="mono small">${escapeHtml(e.id)}</td>
+          <td>${escapeHtml(e.type||'')}</td>
+          <td>${title}</td>
+          <td><button onclick="testPlay('${escapeHtml(e.id)}')">Details</button></td>
+        </tr>`;
+    }).join('');
+    $('search-table').querySelector('tbody').innerHTML =
+      rows || `<tr><td colspan="4" class="muted">Keine Treffer für "${escapeHtml(q)}"</td></tr>`;
+  } catch (e) {
+    $('search-table').querySelector('tbody').innerHTML =
+      `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+
+// On load: overview
+loadOverview();
+setInterval(loadOverview, 10000);
+</script>
+</body>
+</html>

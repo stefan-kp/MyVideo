@@ -331,9 +331,30 @@ diagRouter.get('/content/config', (req, res) => {
   res.json(contentService.getConfig());
 });
 
+// Newest entries (smart-mix: 1 per show), with optional label filter.
+diagRouter.get('/content/newest', (req, res) => {
+  if (!contentService.isEnabled()) return res.status(503).json({ error: 'disabled' });
+  const { findNewest } = require('./lib/content/search');
+  const label = req.query.label || null;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 20, 200);
+  const newerThanDaysOnly = req.query.newerOnly !== '0';
+  const results = findNewest(contentService.getIndex().all(), {
+    label, limit, uniquePerShow: true,
+    newerThanDaysOnly,
+    pathConfigs: contentService.getConfig().paths,
+  });
+  res.json({ count: results.length, results });
+});
+
+// Web UI for diagnostics. LAN-only via the diagRouter middleware.
+diagRouter.get('/ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'diag', 'index.html'));
+});
+
 // Index of available diag endpoints (so you don't have to remember the list).
 diagRouter.get('/', (req, res) => {
   res.json({
+    ui: 'GET /diag/ui  (Web-Interface, LAN-only)',
     available: [
       'GET /diag/channels',
       'GET /diag/stream-state',
@@ -343,6 +364,7 @@ diagRouter.get('/', (req, res) => {
       'GET /diag/settings',
       'GET /diag/content/stats',
       'GET /diag/content/search?q=...',
+      'GET /diag/content/newest?label=Filme&limit=20',
       'GET /diag/content/item/:id',
       'POST /diag/content/reindex',
       'GET /diag/content/config',
