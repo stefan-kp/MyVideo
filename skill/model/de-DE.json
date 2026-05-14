@@ -244,23 +244,13 @@
             {
               "name": "show",
               "type": "AMAZON.SearchQuery"
-            },
-            {
-              "name": "season",
-              "type": "AMAZON.NUMBER"
-            },
-            {
-              "name": "episode",
-              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
             "spiele {show}",
             "starte {show}",
-            "spiele {show} folge {episode}",
-            "spiele {show} episode {episode}",
-            "spiele {show} staffel {season} folge {episode}",
-            "weiterschauen {show}"
+            "weiterschauen {show}",
+            "weiter schauen {show}"
           ]
         },
         {
