@@ -22,6 +22,9 @@
   button:hover { background: #30363d; }
   button.primary { background: #1f6feb; border-color: #1f6feb; }
   button.primary:hover { background: #388bfd; }
+  button.danger { color: #f1857a; border-color: #4a1d1d; }
+  button.danger:hover { background: #4a1d1d; }
+  button.sm { padding: 3px 8px; font-size: 12px; }
   input[type=text] {
     background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
     padding: 6px 10px; border-radius: 6px; font-size: 13px; min-width: 280px;
@@ -34,6 +37,8 @@
   .pill.ok { background: #0d4429; color: #7ee29c; }
   .pill.warn { background: #4a2d0e; color: #f0b86e; }
   .pill.err { background: #4a1d1d; color: #f1857a; }
+  .pill.local { background: #1c3a5e; color: #79c0ff; }
+  .pill.mediathek { background: #3a2d0e; color: #f0b86e; }
   table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 13px; }
   th { text-align: left; padding: 6px 8px; color: #8b949e; font-weight: 600;
        border-bottom: 1px solid #30363d; }
@@ -58,7 +63,7 @@
   a { color: #58a6ff; text-decoration: none; }
   a:hover { text-decoration: underline; }
   .tab-buttons { display: flex; gap: 4px; margin-bottom: 12px;
-                 border-bottom: 1px solid #30363d; }
+                 border-bottom: 1px solid #30363d; flex-wrap: wrap; }
   .tab-buttons button {
     background: transparent; border: none; border-bottom: 2px solid transparent;
     padding: 8px 14px; border-radius: 0; color: #8b949e;
@@ -67,6 +72,26 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
   .small { font-size: 12px; }
+  .filter-chips { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .filter-chips button {
+    background: #161b22; border: 1px solid #30363d; padding: 4px 10px;
+    border-radius: 999px; font-size: 12px;
+  }
+  .filter-chips button.active {
+    background: #1f6feb; border-color: #1f6feb; color: white;
+  }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #1f6feb; color: white; padding: 10px 16px;
+    border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { background: #d73a49; }
+  .queue-count-badge {
+    display: inline-block; background: #1f6feb; color: white;
+    font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -76,6 +101,7 @@
 
 <div class="tab-buttons">
   <button class="active" data-tab="overview">Übersicht</button>
+  <button data-tab="queue">Queue <span class="queue-count-badge" id="queue-badge" style="display:none">0</span></button>
   <button data-tab="content">Lokale Sammlung</button>
   <button data-tab="channels">Live-TV</button>
   <button data-tab="stream">Stream-Zustand</button>
@@ -85,6 +111,11 @@
 <!-- ===== Overview ===== -->
 <div class="tab-content active" id="tab-overview">
   <div class="grid">
+    <div class="card">
+      <div class="stat-label">In Queue</div>
+      <div class="stat" id="stat-queue">–</div>
+      <div class="small muted">zum Anschauen</div>
+    </div>
     <div class="card">
       <div class="stat-label">Lokale Files</div>
       <div class="stat" id="stat-content">–</div>
@@ -108,6 +139,23 @@
   </div>
 </div>
 
+<!-- ===== Queue ===== -->
+<div class="tab-content" id="tab-queue">
+  <div class="row" style="margin-bottom: 12px;">
+    <button id="btn-queue-refresh">Aktualisieren</button>
+    <button class="danger" id="btn-queue-clear">Alle entfernen</button>
+    <span class="small muted">Auf dem Echo Show: "Alexa, spiele meine Queue"</span>
+  </div>
+  <div class="card">
+    <table id="queue-table"><thead><tr>
+      <th style="width: 40px;">#</th>
+      <th>Titel</th>
+      <th>Quelle</th>
+      <th style="width: 140px;">Aktionen</th>
+    </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
+  </div>
+</div>
+
 <!-- ===== Content ===== -->
 <div class="tab-content" id="tab-content">
   <div class="row" style="margin-bottom: 12px;">
@@ -123,8 +171,11 @@
   </div>
   <div class="card">
     <div class="card-title">Neueste Files</div>
+    <div class="filter-chips" id="content-filter-chips">
+      <button class="active" data-label="">Alle</button>
+    </div>
     <table id="content-newest-table"><thead><tr>
-      <th>Datum</th><th>Pfad</th><th>Titel</th><th></th>
+      <th>Datum</th><th>Pfad</th><th>Titel</th><th style="width: 100px;"></th>
     </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
   </div>
 </div>
@@ -161,10 +212,12 @@
   </div>
   <div class="card">
     <table id="search-table"><thead><tr>
-      <th>ID</th><th>Typ</th><th>Titel</th><th></th>
+      <th>ID</th><th>Typ</th><th>Titel</th><th style="width: 100px;"></th>
     </tr></thead><tbody><tr><td colspan="4" class="muted">Sage was du suchst...</td></tr></tbody></table>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -174,8 +227,21 @@ async function jget(url) {
   if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
   return r.json();
 }
-async function jpost(url) {
-  const r = await fetch(url, { method: 'POST', headers: { 'accept': 'application/json' } });
+async function jpost(url, body) {
+  const opts = { method: 'POST', headers: { 'accept': 'application/json' } };
+  if (body !== undefined) {
+    opts.headers['content-type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(`${url} -> HTTP ${r.status}: ${text.slice(0, 200)}`);
+  }
+  return r.json();
+}
+async function jdelete(url) {
+  const r = await fetch(url, { method: 'DELETE' });
   if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
   return r.json();
 }
@@ -184,14 +250,16 @@ function escapeHtml(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function fmtBytes(n) {
-  if (!n) return '0';
-  const u = ['B', 'KB', 'MB', 'GB'];
-  let i = 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return n.toFixed(1) + ' ' + u[i];
-}
 function fmtDate(s) { return s ? s.slice(0, 16).replace('T', ' ') : '–'; }
+
+let toastTimer;
+function toast(msg, isError) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
 
 // ===== Tab routing =====
 document.querySelectorAll('.tab-buttons button').forEach(btn => {
@@ -200,6 +268,7 @@ document.querySelectorAll('.tab-buttons button').forEach(btn => {
     btn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     $('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'queue') loadQueue();
     if (btn.dataset.tab === 'channels') loadChannels();
     if (btn.dataset.tab === 'content') loadContent();
     if (btn.dataset.tab === 'stream') loadStream();
@@ -209,6 +278,12 @@ document.querySelectorAll('.tab-buttons button').forEach(btn => {
 // ===== Overview =====
 async function loadOverview() {
   $('server-banner').textContent = `Verbunden mit ${location.host}`;
+
+  try {
+    const q = await jget('/diag/queue');
+    $('stat-queue').textContent = q.count;
+    updateQueueBadge(q.count);
+  } catch (e) { $('stat-queue').textContent = '?'; }
 
   try {
     const stats = await jget('/diag/content/stats');
@@ -253,7 +328,111 @@ async function loadOverview() {
   } catch (e) { $('stat-fritz').textContent = '?'; }
 }
 
+function updateQueueBadge(n) {
+  const b = $('queue-badge');
+  if (n > 0) { b.textContent = n; b.style.display = ''; }
+  else b.style.display = 'none';
+}
+
+// ===== Queue =====
+async function loadQueue() {
+  try {
+    const q = await jget('/diag/queue');
+    updateQueueBadge(q.count);
+    const rows = (q.items || []).map((it, i) => `
+      <tr>
+        <td class="muted">${i + 1}</td>
+        <td>
+          <div>${escapeHtml(it.title)}</div>
+          <div class="small muted">${escapeHtml(it.subtitle || '')}</div>
+        </td>
+        <td><span class="pill ${it.source}">${escapeHtml(it.source)}</span></td>
+        <td>
+          <button class="sm" onclick="queueUp('${escapeHtml(it.id)}')" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="sm" onclick="queueDown('${escapeHtml(it.id)}')" ${i === q.items.length - 1 ? 'disabled' : ''}>↓</button>
+          <button class="sm danger" onclick="queueRemove('${escapeHtml(it.id)}')">✕</button>
+        </td>
+      </tr>`).join('');
+    $('queue-table').querySelector('tbody').innerHTML =
+      rows || '<tr><td colspan="4" class="muted">Queue ist leer. Füge Items über "Lokale Sammlung" oder "Suche" hinzu.</td></tr>';
+  } catch (e) {
+    $('queue-table').querySelector('tbody').innerHTML =
+      `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+$('btn-queue-refresh').onclick = loadQueue;
+$('btn-queue-clear').onclick = async () => {
+  if (!confirm('Wirklich alle Items aus der Queue entfernen?')) return;
+  try {
+    await jpost('/diag/queue/clear');
+    toast('Queue geleert');
+    loadQueue();
+    loadOverview();
+  } catch (e) { toast('Fehler: ' + e.message, true); }
+};
+window.queueUp = async (id) => {
+  try { await jpost('/diag/queue/' + id + '/up'); loadQueue(); }
+  catch (e) { toast('Fehler: ' + e.message, true); }
+};
+window.queueDown = async (id) => {
+  try { await jpost('/diag/queue/' + id + '/down'); loadQueue(); }
+  catch (e) { toast('Fehler: ' + e.message, true); }
+};
+window.queueRemove = async (id) => {
+  try { await jdelete('/diag/queue/' + id); toast('Entfernt'); loadQueue(); loadOverview(); }
+  catch (e) { toast('Fehler: ' + e.message, true); }
+};
+window.queueAddLocal = async (entry) => {
+  try {
+    await jpost('/diag/queue', {
+      source: 'local',
+      contentId: entry.id,
+      title: entry.type === 'episode'
+        ? `${entry.show||''} S${String(entry.season||0).padStart(2,'0')}E${String(entry.episode||0).padStart(2,'0')} - ${entry.title||''}`
+        : (entry.title || entry.filename),
+      subtitle: entry.pathLabel || '',
+      duration: 0,
+    });
+    toast('In Queue: ' + (entry.title || entry.filename));
+    loadOverview();
+  } catch (e) { toast('Fehler: ' + e.message, true); }
+};
+window.queueAddMediathek = async (entry) => {
+  try {
+    await jpost('/diag/queue', {
+      source: 'mediathek',
+      url: entry.url,
+      title: entry.title,
+      subtitle: (entry.channel || '') + (entry.topic ? ' - ' + entry.topic : ''),
+      duration: entry.duration || 0,
+      imageUrl: entry.imageUrl || '',
+    });
+    toast('In Queue: ' + entry.title);
+    loadOverview();
+  } catch (e) { toast('Fehler: ' + e.message, true); }
+};
+
 // ===== Content =====
+let contentFilter = '';
+function buildContentFilters(labels) {
+  const wrap = $('content-filter-chips');
+  // First child is "Alle" - leave it; add label buttons.
+  Array.from(wrap.querySelectorAll('button[data-label]:not([data-label=""])')).forEach(b => b.remove());
+  labels.forEach(label => {
+    const b = document.createElement('button');
+    b.dataset.label = label;
+    b.textContent = label;
+    wrap.appendChild(b);
+  });
+  wrap.querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      contentFilter = b.dataset.label;
+      wrap.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      loadContentNewest();
+    };
+  });
+}
+
 async function loadContent() {
   $('content-status').textContent = '';
   try {
@@ -275,13 +454,21 @@ async function loadContent() {
       </tr>`).join('');
     $('content-config-table').querySelector('tbody').innerHTML = cfgRows;
     $('content-status').textContent = `${stats.totalEntries} Einträge, Scan: ${fmtDate(stats.scannedAt)}`;
+    buildContentFilters(stats.config.map(p => p.label));
   } catch (e) {
     $('content-status').textContent = 'Fehler: ' + e.message;
   }
+  loadContentNewest();
+}
 
+async function loadContentNewest() {
+  const params = new URLSearchParams({ limit: '30' });
+  if (contentFilter) params.set('label', contentFilter);
   try {
-    const newest = await jget('/diag/content/newest?limit=20');
+    const newest = await jget('/diag/content/newest?' + params.toString());
+    window._lastNewest = {};
     const rows = (newest.results || []).map(e => {
+      window._lastNewest[e.id] = e;
       const title = e.type === 'episode'
         ? `${escapeHtml(e.show||'')} S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')} – ${escapeHtml(e.title||'')}`
         : escapeHtml(e.title || e.filename);
@@ -290,7 +477,9 @@ async function loadContent() {
           <td class="mono small">${e.mtime ? e.mtime.slice(0,10) : '–'}</td>
           <td><span class="pill">${escapeHtml(e.pathLabel||'')}</span></td>
           <td>${title}</td>
-          <td><button onclick="testPlay('${escapeHtml(e.id)}')">Test Play</button></td>
+          <td>
+            <button class="sm" onclick="queueAddLocal(window._lastNewest['${escapeHtml(e.id)}'])">+Queue</button>
+          </td>
         </tr>`;
     }).join('');
     $('content-newest-table').querySelector('tbody').innerHTML =
@@ -310,16 +499,6 @@ $('btn-reindex').onclick = async () => {
     loadContent();
   } catch (e) {
     $('content-status').textContent = 'Reindex fehlgeschlagen: ' + e.message;
-  }
-};
-
-window.testPlay = async (id) => {
-  try {
-    const item = await jget('/diag/content/item/' + id);
-    alert('Item-Eintrag (siehe Konsole)\n\n' + JSON.stringify(item, null, 2).slice(0, 600));
-    console.log('Content-Item:', item);
-  } catch (e) {
-    alert('Fehler: ' + e.message);
   }
 };
 
@@ -344,7 +523,6 @@ async function loadChannels() {
 $('btn-channels-refresh').onclick = loadChannels;
 
 // ===== Stream =====
-let streamTimer = null;
 async function loadStream() {
   try {
     const s = await jget('/diag/stream-state');
@@ -368,7 +546,9 @@ async function doSearch() {
     '<tr><td colspan="4" class="muted">Suche...</td></tr>';
   try {
     const r = await jget('/diag/content/search?q=' + encodeURIComponent(q));
+    window._lastSearch = {};
     const rows = (r.results || []).map(e => {
+      window._lastSearch[e.id] = e;
       const title = e.type === 'episode'
         ? `${escapeHtml(e.show||'')} S${String(e.season||0).padStart(2,'0')}E${String(e.episode||0).padStart(2,'0')} – ${escapeHtml(e.title||'')}`
         : escapeHtml(e.title || e.filename);
@@ -377,7 +557,7 @@ async function doSearch() {
           <td class="mono small">${escapeHtml(e.id)}</td>
           <td>${escapeHtml(e.type||'')}</td>
           <td>${title}</td>
-          <td><button onclick="testPlay('${escapeHtml(e.id)}')">Details</button></td>
+          <td><button class="sm" onclick="queueAddLocal(window._lastSearch['${escapeHtml(e.id)}'])">+Queue</button></td>
         </tr>`;
     }).join('');
     $('search-table').querySelector('tbody').innerHTML =
@@ -388,7 +568,7 @@ async function doSearch() {
   }
 }
 
-// On load: overview
+// On load
 loadOverview();
 setInterval(loadOverview, 10000);
 </script>
