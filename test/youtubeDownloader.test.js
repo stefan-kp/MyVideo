@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { EventEmitter } = require('events');
-const { downloadVideo, buildDownloadArgs } = require('../lib/youtube/downloader');
+const { downloadVideo, buildDownloadArgs, DEFAULT_FORMAT } = require('../lib/youtube/downloader');
 
 let passed = 0, failed = 0;
 function assert(c, m) { if (c) { console.log(`  ✓ ${m}`); passed++; } else { console.error(`  ✗ ${m}`); failed++; } }
@@ -30,6 +30,13 @@ function fakeSpawn(exitCode, stdoutChunks = [], stderrChunks = [], opts = {}) {
 }
 
 (async () => {
+  console.log('\n--- DEFAULT_FORMAT forces H.264 (avoid AV1 → CPU transcode) ---');
+  assert(DEFAULT_FORMAT.includes('vcodec^=avc1'),
+    `DEFAULT_FORMAT must restrict to avc1/H.264 (got: ${DEFAULT_FORMAT})`);
+  assert(DEFAULT_FORMAT.includes('height<=720'), 'DEFAULT_FORMAT caps at 720p');
+  assert(DEFAULT_FORMAT.includes('m4a') || DEFAULT_FORMAT.includes('aac'),
+    'DEFAULT_FORMAT prefers AAC audio (m4a container)');
+
   console.log('\n--- buildDownloadArgs ---');
   const args = buildDownloadArgs({
     videoId: 'abc123',
