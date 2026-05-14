@@ -39,6 +39,13 @@ if (!process.env.JWT_SECRET) {
   console.warn('WARNUNG: JWT_SECRET nicht gesetzt! Proxy-Routen werden nicht funktionieren.');
 }
 
+// --- Root: redirect to diag UI (LAN-gated by /diag middleware) ---
+// The Alexa skill uses POST /alexa, never GET /, so this redirect is safe.
+// Public callers via the Cloudflare tunnel get redirected too but then hit
+// the LAN-only 404 on /diag/ui — same outcome as if they tried /diag/ui
+// directly, just one extra hop.
+app.get('/', (req, res) => res.redirect(302, '/diag/ui'));
+
 // --- Lokale Logos ---
 app.use('/logos', express.static(path.join(__dirname, 'public', 'logos')));
 
