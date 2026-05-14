@@ -20,6 +20,8 @@ const SearchContentHandler = require('./skill/handlers/SearchContentHandler');
 const SearchEverythingHandler = require('./skill/handlers/SearchEverythingHandler');
 const ListNewContentHandler = require('./skill/handlers/ListNewContentHandler');
 const PlayShowHandler = require('./skill/handlers/PlayShowHandler');
+const PlayQueueHandler = require('./skill/handlers/PlayQueueHandler');
+const QueuePeekHandler = require('./skill/handlers/QueuePeekHandler');
 const PlayMediathekResultHandler = require('./skill/handlers/PlayMediathekResultHandler');
 const PlayCategoryHandler = require('./skill/handlers/PlayCategoryHandler');
 const PlayVideoHandler = require('./skill/handlers/PlayVideoHandler');
@@ -351,6 +353,55 @@ diagRouter.get('/ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'diag', 'index.html'));
 });
 
+// --- Watch-Queue endpoints (LAN-only) ---
+// Queue items are: { id, source: 'local'|'mediathek', contentId|url, title,
+//                    subtitle, duration, imageUrl, addedAt }
+const queueModule = require('./lib/queue');
+const queueJson = express.json();
+
+diagRouter.get('/queue', (req, res) => {
+  res.json({ count: queueModule.getInstance().count(), items: queueModule.getInstance().list() });
+});
+
+diagRouter.post('/queue', queueJson, (req, res) => {
+  try {
+    const input = req.body || {};
+    // For local source: validate that contentId resolves
+    if (input.source === 'local') {
+      if (!contentService.isEnabled()) {
+        return res.status(503).json({ error: 'content service not enabled' });
+      }
+      const entry = contentService.getIndex().findById(input.contentId);
+      if (!entry) return res.status(404).json({ error: `unknown contentId: ${input.contentId}` });
+    }
+    const item = queueModule.getInstance().add(input);
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+diagRouter.delete('/queue/:id', (req, res) => {
+  const ok = queueModule.getInstance().remove(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'not found' });
+  res.json({ ok: true });
+});
+
+diagRouter.post('/queue/:id/up', (req, res) => {
+  const ok = queueModule.getInstance().reorder(req.params.id, 'up');
+  res.json({ ok });
+});
+
+diagRouter.post('/queue/:id/down', (req, res) => {
+  const ok = queueModule.getInstance().reorder(req.params.id, 'down');
+  res.json({ ok });
+});
+
+diagRouter.post('/queue/clear', (req, res) => {
+  queueModule.getInstance().clear();
+  res.json({ ok: true });
+});
+
 // Index of available diag endpoints (so you don't have to remember the list).
 diagRouter.get('/', (req, res) => {
   res.json({
@@ -368,6 +419,12 @@ diagRouter.get('/', (req, res) => {
       'GET /diag/content/item/:id',
       'POST /diag/content/reindex',
       'GET /diag/content/config',
+      'GET /diag/queue',
+      'POST /diag/queue',
+      'DELETE /diag/queue/:id',
+      'POST /diag/queue/:id/up',
+      'POST /diag/queue/:id/down',
+      'POST /diag/queue/clear',
     ],
     note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
   });
@@ -410,6 +467,8 @@ const skillBuilder = Alexa.SkillBuilders.custom()
     SearchEverythingHandler,
     ListNewContentHandler,
     PlayShowHandler,
+    PlayQueueHandler,
+    QueuePeekHandler,
     PlayMediathekResultHandler,
     PlayCategoryHandler,
     PlayVideoHandler,

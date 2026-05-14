@@ -254,6 +254,30 @@
           ]
         },
         {
+          "name": "PlayQueueIntent",
+          "slots": [],
+          "samples": [
+            "spiele meine queue",
+            "spiele queue",
+            "nächstes aus queue",
+            "was ist als nächstes dran",
+            "spiele die queue ab",
+            "starte queue",
+            "spiele queue ab"
+          ]
+        },
+        {
+          "name": "QueuePeekIntent",
+          "slots": [],
+          "samples": [
+            "was ist als nächstes",
+            "was steht in der queue",
+            "zeige queue",
+            "was ist in meiner queue",
+            "meine queue"
+          ]
+        },
+        {
           "name": "AMAZON.NextIntent",
           "samples": []
         },
