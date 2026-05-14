@@ -420,9 +420,31 @@ diagRouter.post('/youtube/playlists/:id/download/:videoId', async (req, res) => 
   const video = (pl.videos || []).find(v => v.videoId === req.params.videoId);
   if (!video) return res.status(404).json({ error: 'video not in playlist' });
 
-  // Already downloaded and file still there? Just return the existing content id.
+  // Already downloaded and file still there? Just return the existing
+  // contentId so the UI can immediately add to the queue without
+  // re-downloading. If the index doesn't know the file yet (first call
+  // after a fresh container or after the file was just dropped in),
+  // trigger a rescan first so the contentId is guaranteed to be there.
   if (video.downloaded && video.downloadedPath && ytFs.existsSync(video.downloadedPath)) {
-    return res.json({ ok: true, alreadyDownloaded: true, path: video.downloadedPath });
+    let contentId = null;
+    if (contentService.isEnabled()) {
+      const findInIndex = () => {
+        const entry = contentService.getIndex().all().find(e => e.path === video.downloadedPath);
+        return entry ? entry.id : null;
+      };
+      contentId = findInIndex();
+      if (!contentId) {
+        // Force a rescan so the file becomes known.
+        try { await contentService.rescan(); } catch (_) { /* logged elsewhere */ }
+        contentId = findInIndex();
+      }
+    }
+    return res.json({
+      ok: true,
+      alreadyDownloaded: true,
+      path: video.downloadedPath,
+      contentId,
+    });
   }
 
   // Per-playlist mutex so two concurrent downloads in the same slug-dir
