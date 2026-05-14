@@ -102,6 +102,7 @@
 <div class="tab-buttons">
   <button class="active" data-tab="overview">Übersicht</button>
   <button data-tab="queue">Queue <span class="queue-count-badge" id="queue-badge" style="display:none">0</span></button>
+  <button data-tab="youtube">YouTube</button>
   <button data-tab="content">Lokale Sammlung</button>
   <button data-tab="channels">Live-TV</button>
   <button data-tab="stream">Stream-Zustand</button>
@@ -153,6 +154,28 @@
       <th>Quelle</th>
       <th style="width: 140px;">Aktionen</th>
     </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- ===== YouTube ===== -->
+<div class="tab-content" id="tab-youtube">
+  <div class="card">
+    <div class="card-title">Neue Playlist hinzufügen</div>
+    <div class="row" style="gap: 8px; flex-wrap: wrap;">
+      <input type="text" id="yt-url" placeholder="YouTube-Playlist URL (oder PL...-ID)" style="flex: 2; min-width: 280px;">
+      <input type="text" id="yt-label" placeholder="Label (z.B. Jimmy Kimmel)" style="flex: 1; min-width: 160px;">
+      <input type="number" id="yt-cleanup" placeholder="Tage" value="7" min="1" max="365" style="width: 80px;">
+      <button class="primary" id="btn-yt-add">+ Hinzufügen</button>
+    </div>
+    <p class="small muted" style="margin: 6px 0 0;">
+      Tipp: Erstelle dir auf YouTube eine eigene "Nicht gelistete" Playlist
+      und füge dort die Videos hinzu, die du auf dem Echo Show schauen willst.
+      Hier eintragen, "Aktualisieren" drücken, Video auswählen → wird heruntergeladen
+      und landet automatisch in der lokalen Sammlung.
+    </p>
+  </div>
+  <div id="yt-playlists">
+    <p class="muted">Lade...</p>
   </div>
 </div>
 
@@ -277,6 +300,7 @@ document.querySelectorAll('.tab-buttons button').forEach(btn => {
     if (btn.dataset.tab === 'channels') loadChannels();
     if (btn.dataset.tab === 'content') loadContent();
     if (btn.dataset.tab === 'stream') loadStream();
+    if (btn.dataset.tab === 'youtube') loadYoutube();
   };
 });
 
@@ -591,6 +615,166 @@ async function doSearch() {
       `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
   }
 }
+
+// ===== YouTube =====
+function fmtDuration(s) {
+  if (!s) return '';
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${m}:${String(ss).padStart(2, '0')}`;
+}
+function fmtUploadDate(d) {
+  if (!d || d.length < 8) return '';
+  return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+}
+
+async function loadYoutube() {
+  const wrap = $('yt-playlists');
+  wrap.innerHTML = '<p class="muted">Lade...</p>';
+  try {
+    const r = await jget('/diag/youtube/playlists');
+    if (!r.playlists || r.playlists.length === 0) {
+      wrap.innerHTML = '<p class="muted">Noch keine Playlists. Trage oben eine ein.</p>';
+      return;
+    }
+    window._ytPlaylists = {};
+    wrap.innerHTML = r.playlists.map(pl => {
+      window._ytPlaylists[pl.id] = pl;
+      const dlCount = (pl.videos || []).filter(v => v.downloaded).length;
+      const videoRows = (pl.videos || []).map(v => {
+        const status = v.downloaded
+          ? '<span class="pill local">✓ heruntergeladen</span>'
+          : '<span class="pill muted">⬇</span>';
+        const action = v.downloaded
+          ? `<button class="sm" onclick="ytQueueDownloaded('${escapeHtml(pl.id)}','${escapeHtml(v.videoId)}')">+Queue</button>`
+          : `<button class="sm primary" onclick="ytDownloadAndQueue('${escapeHtml(pl.id)}','${escapeHtml(v.videoId)}', this)">Laden + Queue</button>`;
+        return `
+          <tr>
+            <td style="width: 130px;">${status}</td>
+            <td>
+              <div>${escapeHtml(v.title || v.videoId)}</div>
+              <div class="small muted">${fmtUploadDate(v.uploadDate)} · ${fmtDuration(v.duration)}</div>
+            </td>
+            <td style="width: 160px;">${action}</td>
+          </tr>`;
+      }).join('') ||
+        '<tr><td colspan="3" class="muted">Noch nicht gecrawled. Klick "Aktualisieren".</td></tr>';
+      return `
+        <div class="card" data-pl-id="${escapeHtml(pl.id)}">
+          <div class="card-title">${escapeHtml(pl.label)}
+            <span class="small muted">· ${pl.videos ? pl.videos.length : 0} Videos · ${dlCount} heruntergeladen ·
+            Letzter Crawl: ${pl.lastCrawledAt ? fmtDate(pl.lastCrawledAt) : 'noch nie'}</span>
+          </div>
+          <div class="row" style="margin-bottom: 8px;">
+            <button onclick="ytCrawl('${escapeHtml(pl.id)}', this)">Aktualisieren</button>
+            <button class="danger" onclick="ytRemove('${escapeHtml(pl.id)}')">Entfernen</button>
+            <a class="small muted" href="${escapeHtml(pl.url)}" target="_blank">↗ Auf YouTube ansehen</a>
+          </div>
+          <table><tbody>${videoRows}</tbody></table>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    wrap.innerHTML = `<p class="muted">Fehler: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+$('btn-yt-add').onclick = async () => {
+  const url = $('yt-url').value.trim();
+  const label = $('yt-label').value.trim();
+  const cleanupDays = parseInt($('yt-cleanup').value, 10) || 7;
+  if (!url || !label) { toast('URL und Label erforderlich', true); return; }
+  try {
+    await jpost('/diag/youtube/playlists', { url, label, cleanupDays });
+    toast('Playlist hinzugefügt');
+    $('yt-url').value = '';
+    $('yt-label').value = '';
+    loadYoutube();
+  } catch (e) {
+    toast('Fehler: ' + e.message, true);
+  }
+};
+
+window.ytCrawl = async (id, btn) => {
+  if (btn) { btn.disabled = true; btn.textContent = 'Crawle...'; }
+  try {
+    await jpost('/diag/youtube/playlists/' + id + '/crawl');
+    toast('Playlist aktualisiert');
+    loadYoutube();
+  } catch (e) {
+    toast('Crawl-Fehler: ' + e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Aktualisieren'; }
+  }
+};
+
+window.ytRemove = async (id) => {
+  const pl = (window._ytPlaylists || {})[id];
+  if (!confirm(`Playlist "${pl ? pl.label : id}" entfernen?\n\nAchtung: Heruntergeladene Videos in data/youtube/${pl ? pl.slug : ''}/ werden ebenfalls gelöscht.`)) return;
+  try {
+    await jdelete('/diag/youtube/playlists/' + id);
+    toast('Playlist entfernt');
+    loadYoutube();
+  } catch (e) {
+    toast('Fehler: ' + e.message, true);
+  }
+};
+
+window.ytDownloadAndQueue = async (playlistId, videoId, btn) => {
+  const pl = (window._ytPlaylists || {})[playlistId];
+  if (!pl) return;
+  const v = (pl.videos || []).find(x => x.videoId === videoId);
+  if (btn) { btn.disabled = true; btn.textContent = 'Lade...'; }
+  try {
+    const r = await jpost('/diag/youtube/playlists/' + playlistId + '/download/' + videoId);
+    if (r.contentId) {
+      // Got a contentId back - add to queue immediately.
+      await jpost('/diag/queue', {
+        source: 'local',
+        contentId: r.contentId,
+        title: (v && v.title) || videoId,
+        subtitle: pl.label,
+        duration: v ? v.duration : 0,
+      });
+      toast('Geladen und in Queue: ' + (v ? v.title : videoId));
+    } else {
+      // Download succeeded but reindex didn't find the file yet. Tell the
+      // user it's downloaded and let them add manually after reindex.
+      toast('Geladen. Reindex läuft - manuell aus "Lokale Sammlung" addieren.');
+    }
+    loadYoutube();
+    loadOverview();
+  } catch (e) {
+    toast('Download fehlgeschlagen: ' + e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Laden + Queue'; }
+  }
+};
+
+window.ytQueueDownloaded = async (playlistId, videoId) => {
+  const pl = (window._ytPlaylists || {})[playlistId];
+  if (!pl) return;
+  const v = (pl.videos || []).find(x => x.videoId === videoId);
+  if (!v) return;
+  // The file was already downloaded; just find its contentId via newest endpoint
+  // by absolute path -> we POST the existing download endpoint which is
+  // idempotent and reports back contentId via the post-download rescan.
+  try {
+    const r = await jpost('/diag/youtube/playlists/' + playlistId + '/download/' + videoId);
+    if (r.contentId) {
+      await jpost('/diag/queue', {
+        source: 'local',
+        contentId: r.contentId,
+        title: v.title || videoId,
+        subtitle: pl.label,
+        duration: v.duration,
+      });
+      toast('In Queue: ' + v.title);
+      loadOverview();
+    } else {
+      toast('Datei vorhanden, aber kein contentId gefunden. Reindex läuft.', true);
+    }
+  } catch (e) {
+    toast('Fehler: ' + e.message, true);
+  }
+};
 
 // On load
 loadOverview();
