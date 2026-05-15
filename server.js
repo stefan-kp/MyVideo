@@ -4,6 +4,7 @@ const express = require('express');
 const Alexa = require('ask-sdk-core');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
 const path = require('path');
+const fs = require('fs');
 
 const channels = require('./lib/channels');
 const hlsProxy = require('./lib/hlsProxy');
@@ -130,6 +131,45 @@ app.use('/stream', fritzboxStreamRouter);
 // --- Local content direct-play ---
 const contentRouter = express.Router();
 contentRouter.use(authMiddleware());
+
+const sharp = require('sharp');
+const { resolvePosterPath } = require('./lib/posterLookup');
+const POSTER_CACHE_DIR = path.join(__dirname, 'data', 'poster-cache');
+const POSTER_WIDTH = 560;  // 2x 280dp
+const POSTER_HEIGHT = 320; // 2x 160dp
+
+contentRouter.get(/^\/(.+)\/poster\.jpg$/, async (req, res) => {
+  const id = req.params[0];
+  // token scoped to id (so a queue add couldn't leak random posters)
+  if (req.tokenPayload?.sub !== id) {
+    return res.status(403).json({ error: 'token mismatch' });
+  }
+  // disk cache key = sha of id
+  const crypto = require('crypto');
+  const cacheKey = crypto.createHash('sha1').update(id).digest('hex');
+  const cachedPath = path.join(POSTER_CACHE_DIR, `${cacheKey}.jpg`);
+  if (fs.existsSync(cachedPath)) {
+    res.set('Cache-Control', 'public, max-age=604800');
+    return res.sendFile(cachedPath);
+  }
+  const src = resolvePosterPath(id, contentService);
+  if (!src) {
+    // fallback image
+    return res.redirect(302, '/logos/_fallback_local.png');
+  }
+  try {
+    fs.mkdirSync(POSTER_CACHE_DIR, { recursive: true });
+    await sharp(src)
+      .resize(POSTER_WIDTH, POSTER_HEIGHT, { fit: 'cover' })
+      .jpeg({ quality: 85 })
+      .toFile(cachedPath);
+    res.set('Cache-Control', 'public, max-age=604800');
+    res.sendFile(cachedPath);
+  } catch (err) {
+    console.warn('poster resize failed:', err.message);
+    res.redirect(302, '/logos/_fallback_local.png');
+  }
+});
 
 // /content/<id>/file.mp4  -- direct stream of the local file
 // Note: <id> contains '/' (e.g. "filme/inception-2010"), so we use a wildcard.
