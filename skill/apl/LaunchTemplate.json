@@ -138,6 +138,7 @@
     "parameters": ["launchData"],
     "items": [
       {
+        "when": "${@viewportProfile != @hubLandscapeSmall}",
         "type": "Container",
         "width": "100vw",
         "height": "100vh",
@@ -328,6 +329,159 @@
                 "color": "@textMuted",
                 "fontSize": "16dp",
                 "textAlign": "center"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "when": "${@viewportProfile == @hubLandscapeSmall}",
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "padding": "16dp",
+        "backgroundColor": "@bgBase",
+        "items": [
+          {
+            "type": "Container",
+            "direction": "row",
+            "alignItems": "center",
+            "height": "60dp",
+            "items": [
+              {
+                "type": "Text",
+                "text": "${launchData.properties.greeting.header}",
+                "color": "@textPrimary",
+                "fontSize": "20dp",
+                "fontWeight": "bold",
+                "maxLines": 1,
+                "grow": 1
+              },
+              {
+                "type": "TouchWrapper",
+                "minWidth": "@minTouch",
+                "minHeight": "@minTouch",
+                "onPress": { "type": "SendEvent", "arguments": ["playQueue"] },
+                "when": "${launchData.properties.greeting.priority == 'queue'}",
+                "item": {
+                  "type": "Frame",
+                  "width": "180dp",
+                  "height": "56dp",
+                  "backgroundColor": "@accentCta",
+                  "borderRadius": "@radiusCard",
+                  "item": {
+                    "type": "Text",
+                    "text": "Queue ▶",
+                    "color": "@textPrimary",
+                    "fontSize": "16dp",
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                    "textAlignVertical": "center"
+                  }
+                }
+              }
+            ]
+          },
+
+          {
+            "type": "ScrollView",
+            "grow": 1,
+            "items": [
+              {
+                "type": "Container",
+                "paddingTop": "10dp",
+                "items": [
+                  {
+                    "type": "Container",
+                    "when": "${launchData.properties.queue.length > 0}",
+                    "items": [
+                      { "type": "Text", "text": "QUEUE", "color": "@accent", "fontSize": "16dp", "fontWeight": "bold", "paddingBottom": "6dp" },
+                      {
+                        "type": "Container",
+                        "direction": "row",
+                        "data": "${launchData.properties.queue}",
+                        "items": [
+                          {
+                            "type": "MediaCard",
+                            "title": "${data.title}",
+                            "subtitle": "${data.subtitle}",
+                            "imageUrl": "${data.imageUrl}",
+                            "touchAction": "selectQueueItem",
+                            "touchPayload": "${data.id}",
+                            "paddingRight": "8dp"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+
+                  { "type": "Text", "text": "LIVE-TV", "color": "@accent", "fontSize": "16dp", "fontWeight": "bold", "paddingTop": "14dp", "paddingBottom": "6dp" },
+                  {
+                    "type": "Container",
+                    "direction": "row",
+                    "data": "${launchData.properties.liveTVChannels}",
+                    "items": [
+                      {
+                        "type": "LogoTile",
+                        "name": "${data.name}",
+                        "logoUrl": "${data.logo}",
+                        "channelId": "${data.id}",
+                        "paddingRight": "8dp"
+                      }
+                    ]
+                  },
+
+                  { "type": "Text", "text": "NEWS", "color": "@accent", "fontSize": "16dp", "fontWeight": "bold", "paddingTop": "14dp", "paddingBottom": "6dp" },
+                  {
+                    "type": "Container",
+                    "data": "${launchData.properties.sections[0].results}",
+                    "items": [
+                      {
+                        "type": "MediaCard",
+                        "title": "${data.title}",
+                        "subtitle": "${data.channel} · ${data.time}",
+                        "imageUrl": "${data.imageUrl != '' ? data.imageUrl : data.logo}",
+                        "touchAction": "selectNewsItem",
+                        "touchPayload": "${data.flatIndex}",
+                        "paddingBottom": "8dp"
+                      }
+                    ]
+                  },
+
+                  { "type": "Text", "text": "LOKAL", "color": "@accent", "fontSize": "16dp", "fontWeight": "bold", "paddingTop": "14dp", "paddingBottom": "6dp", "when": "${launchData.properties.recentContent.length > 0}" },
+                  {
+                    "type": "Container",
+                    "data": "${launchData.properties.recentContent}",
+                    "items": [
+                      {
+                        "type": "MediaCard",
+                        "title": "${data.title}",
+                        "subtitle": "${data.label}",
+                        "imageUrl": "${data.imageUrl != '' ? data.imageUrl : ''}",
+                        "touchAction": "selectLocalContent",
+                        "touchPayload": "${data.id}",
+                        "paddingBottom": "8dp"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Container",
+            "height": "30dp",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "items": [
+              {
+                "type": "Text",
+                "text": "${launchData.properties.voiceHint}",
+                "color": "@textMuted",
+                "fontSize": "14dp",
+                "textAlign": "center",
+                "maxLines": 1
               }
             ]
           }
