@@ -131,7 +131,7 @@
           {
             "type": "Text",
             "text": "Tippe auf einen Sender oder sage seinen Namen.",
-            "color": "#78909C",
+            "color": "@textDim",
             "fontSize": "16dp",
             "paddingTop": "10dp",
             "textAlign": "center"
