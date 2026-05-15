@@ -4,6 +4,7 @@ const { renderLaunchScreen } = require('../../lib/aplHelper');
 const { buildGreeting } = require('../../lib/launchGreeting');
 const { generateStreamToken } = require('../../lib/auth');
 const { pickVoiceHint } = require('../../lib/voiceHints');
+const { videoIdFromEntry, thumbnailUrl } = require('../../lib/youtube/thumbnail');
 
 const LaunchHandler = {
   canHandle(handlerInput) {
@@ -38,18 +39,39 @@ const LaunchHandler = {
 
     const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 
+    // Resolve the best imageUrl for a local content entry.
+    //  - YouTube downloads (contentId starts 'youtube/') → use ytimg.com
+    //    thumbnail (always available, no server-side resize).
+    //  - Other local files → /content/<id>/poster.jpg (server-side scan
+    //    for cover.jpg/poster.jpg + Sharp-resize + disk cache; falls back
+    //    to typed _fallback_*.png if no source exists).
+    const contentSvc = (() => {
+      try { return require('../../lib/content/service'); }
+      catch (_) { return null; }
+    })();
+    function imageUrlForLocalContent(contentId) {
+      if (!contentId) return '';
+      if (contentId.startsWith('youtube/') && contentSvc && contentSvc.isEnabled && contentSvc.isEnabled()) {
+        const entry = contentSvc.getIndex().findById(contentId);
+        if (entry && entry.path) {
+          const vid = videoIdFromEntry(entry.path);
+          if (vid) return thumbnailUrl(vid);
+        }
+      }
+      // Generic local file: signed poster.jpg endpoint
+      try {
+        const tok = process.env.JWT_SECRET ? `?token=${generateStreamToken(contentId)}` : '';
+        return `${baseUrl}/content/${contentId}/poster.jpg${tok}`;
+      } catch (_) { return ''; }
+    }
+
     let queueRow = [];
     try {
       const queueModule = require('../../lib/queue');
       queueRow = queueModule.getInstance().peek(3).map(it => {
         let imageUrl = it.imageUrl || '';
         if (!imageUrl && it.source === 'local' && it.contentId) {
-          try {
-            const tok = process.env.JWT_SECRET ? `?token=${generateStreamToken(it.contentId)}` : '';
-            imageUrl = `${baseUrl}/content/${it.contentId}/poster.jpg${tok}`;
-          } catch (err) {
-            // JWT secret may be missing in tests — leave imageUrl empty.
-          }
+          imageUrl = imageUrlForLocalContent(it.contentId);
         }
         return {
           id: it.id,
@@ -72,19 +94,13 @@ const LaunchHandler = {
           pathConfigs: contentService.getConfig().paths,
         });
         recentContent = newest.map(e => {
-          let posterToken = '';
-          try {
-            posterToken = process.env.JWT_SECRET ? `?token=${generateStreamToken(e.id)}` : '';
-          } catch (err) {
-            posterToken = '';
-          }
           return {
             id: e.id,
             label: e.pathLabel,
             title: e.type === 'episode'
               ? `${e.show} S${String(e.season || 0).padStart(2, '0')}E${String(e.episode || 0).padStart(2, '0')}`
               : (e.title || e.filename),
-            imageUrl: `${baseUrl}/content/${e.id}/poster.jpg${posterToken}`,
+            imageUrl: imageUrlForLocalContent(e.id),
           };
         });
       }
