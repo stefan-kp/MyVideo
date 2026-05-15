@@ -133,10 +133,11 @@ const contentRouter = express.Router();
 contentRouter.use(authMiddleware());
 
 const sharp = require('sharp');
+const crypto = require('crypto');
 const { resolvePosterPath } = require('./lib/posterLookup');
 const POSTER_CACHE_DIR = path.join(__dirname, 'data', 'poster-cache');
-const POSTER_WIDTH = 560;  // 2x 280dp
-const POSTER_HEIGHT = 320; // 2x 160dp
+const POSTER_WIDTH = 560;  // 2x 280dp (MediaCard image width)
+const POSTER_HEIGHT = 270; // 2x 135dp (MediaCard image height — actual render size)
 
 contentRouter.get(/^\/(.+)\/poster\.jpg$/, async (req, res) => {
   const id = req.params[0];
@@ -144,18 +145,20 @@ contentRouter.get(/^\/(.+)\/poster\.jpg$/, async (req, res) => {
   if (req.tokenPayload?.sub !== id) {
     return res.status(403).json({ error: 'token mismatch' });
   }
-  // disk cache key = sha of id
-  const crypto = require('crypto');
-  const cacheKey = crypto.createHash('sha1').update(id).digest('hex');
+  // Resolve source first — needed for mtime cache key so we don't serve
+  // a stale cached jpg after the user replaces cover.jpg in their library.
+  const src = resolvePosterPath(id, contentService);
+  if (!src) {
+    return res.redirect(302, '/logos/_fallback_local.png');
+  }
+  let srcMtime = 0;
+  try { srcMtime = fs.statSync(src).mtimeMs; } catch (_) { /* keep 0 */ }
+  // disk cache key = sha1(id + mtime) — invalidates automatically on source change
+  const cacheKey = crypto.createHash('sha1').update(`${id}:${srcMtime}`).digest('hex');
   const cachedPath = path.join(POSTER_CACHE_DIR, `${cacheKey}.jpg`);
   if (fs.existsSync(cachedPath)) {
     res.set('Cache-Control', 'public, max-age=604800');
     return res.sendFile(cachedPath);
-  }
-  const src = resolvePosterPath(id, contentService);
-  if (!src) {
-    // fallback image
-    return res.redirect(302, '/logos/_fallback_local.png');
   }
   try {
     fs.mkdirSync(POSTER_CACHE_DIR, { recursive: true });

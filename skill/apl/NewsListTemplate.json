@@ -35,7 +35,7 @@
           {
             "type": "Text",
             "text": "${newsData.properties.title}",
-            "color": "white",
+            "color": "@textPrimary",
             "fontSize": "32dp",
             "fontWeight": "bold",
             "paddingBottom": "16dp"
@@ -49,6 +49,7 @@
             "items": [
               {
                 "type": "TouchWrapper",
+                "minHeight": "@minTouch",
                 "onPress": [
                   {
                     "type": "SendEvent",
@@ -71,7 +72,7 @@
                         "alignItems": "center",
                         "items": [
                           { "type": "Image", "source": "${newsData.properties.liveQuickAction.logo}", "width": "48dp", "height": "32dp", "scale": "best-fit" },
-                          { "type": "Text", "text": "LIVE: ${newsData.properties.liveQuickAction.name}", "color": "white", "fontSize": "20dp", "paddingLeft": "12dp" }
+                          { "type": "Text", "text": "LIVE: ${newsData.properties.liveQuickAction.name}", "color": "@textPrimary", "fontSize": "20dp", "paddingLeft": "12dp" }
                         ]
                       }
                     ]
@@ -108,6 +109,7 @@
                     "items": [
                       {
                         "type": "TouchWrapper",
+                        "minHeight": "@minTouch",
                         "onPress": [
                           {
                             "type": "SendEvent",
@@ -117,7 +119,7 @@
                         "items": [
                           {
                             "type": "Frame",
-                            "backgroundColor": "${data.flatIndex % 2 == 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}",
+                            "backgroundColor": "@bgCard",
                             "borderRadius": "12dp",
                             "paddingLeft": "20dp",
                             "paddingRight": "20dp",
@@ -155,7 +157,7 @@
                                       {
                                         "type": "Text",
                                         "text": "${data.title}",
-                                        "color": "white",
+                                        "color": "@textPrimary",
                                         "fontSize": "22dp",
                                         "fontWeight": "bold",
                                         "maxLines": 2

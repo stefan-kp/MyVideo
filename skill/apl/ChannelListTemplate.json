@@ -35,7 +35,7 @@
           {
             "type": "Text",
             "text": "Sender",
-            "color": "white",
+            "color": "@textPrimary",
             "fontSize": "32dp",
             "fontWeight": "bold",
             "paddingBottom": "20dp"
@@ -49,6 +49,7 @@
             "items": [
               {
                 "type": "TouchWrapper",
+                "minHeight": "@minTouch",
                 "onPress": [
                   {
                     "type": "SendEvent",
@@ -107,7 +108,7 @@
                               {
                                 "type": "Text",
                                 "text": "${data.name}",
-                                "color": "white",
+                                "color": "@textPrimary",
                                 "fontSize": "24dp",
                                 "fontWeight": "bold"
                               },

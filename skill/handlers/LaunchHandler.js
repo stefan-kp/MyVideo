@@ -3,20 +3,7 @@ const mediathek = require('../../lib/mediathek');
 const { renderLaunchScreen } = require('../../lib/aplHelper');
 const { buildGreeting } = require('../../lib/launchGreeting');
 const { generateStreamToken } = require('../../lib/auth');
-
-// Voice-hint pool — one is picked at random per launch. Echo Show APL
-// animations are unreliable for in-frame rotation; re-launches provide
-// the rotation instead.
-const VOICE_HINTS = [
-  'Sag: Tagesschau, Queue, ORF1',
-  'Sag: spiel Queue weiter',
-  'Sag: ORF1, ZDF oder zeig alle Sender',
-  'Sag: was läuft heute',
-  'Sag: zeig YouTube, zeig Sport',
-];
-function pickVoiceHint() {
-  return VOICE_HINTS[Math.floor(Math.random() * VOICE_HINTS.length)];
-}
+const { pickVoiceHint } = require('../../lib/voiceHints');
 
 const LaunchHandler = {
   canHandle(handlerInput) {
