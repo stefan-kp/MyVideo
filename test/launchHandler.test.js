@@ -190,6 +190,30 @@ function makeHandlerInput({ supportsVideo = true, supportsAPL = true } = {}) {
     `poster URL (got: ${local[0].imageUrl})`);
   delete process.env.BASE_URL;
 
+  console.log('\n--- LaunchHandler: voiceHint is one of the rotation pool ---');
+  // Reuse the empty-queue, news-ok scenario for a clean state.
+  mockModule('../lib/queue', { getInstance: () => ({ peek: () => [], count: () => 0 }) });
+  mockModule('../lib/mediathek', { searchCategorizedNews: async () => ({ sections: [{ title: 'Top', results: [] }] }) });
+  delete require.cache[require.resolve('../skill/handlers/LaunchHandler')];
+  const LH7 = require('../skill/handlers/LaunchHandler');
+  hi = makeHandlerInput();
+  resp = await LH7.handle(hi);
+  const d7 = resp.directives.find(d => d.type === 'Alexa.Presentation.APL.RenderDocument');
+  const hint = d7.datasources.launchData.properties.voiceHint;
+  assert(typeof hint === 'string' && hint.startsWith('Sag:'),
+    `hint starts with 'Sag:' (got: ${hint})`);
+  // Sample 10 times and verify we see at least 2 distinct hints (rotation works).
+  const sampledHints = new Set();
+  for (let i = 0; i < 30; i++) {
+    delete require.cache[require.resolve('../skill/handlers/LaunchHandler')];
+    const LH = require('../skill/handlers/LaunchHandler');
+    const r = await LH.handle(makeHandlerInput());
+    const d = r.directives.find(x => x.type === 'Alexa.Presentation.APL.RenderDocument');
+    sampledHints.add(d.datasources.launchData.properties.voiceHint);
+  }
+  assert(sampledHints.size >= 2,
+    `rotation produces >=2 distinct hints in 30 samples (got: ${sampledHints.size}, hints: ${[...sampledHints].join(' | ')})`);
+
   console.log('\n--- LaunchTemplate.json: valid, binds greeting.header, no right-column block ---');
   const fs = require('fs');
   const tpl = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', 'skill', 'apl', 'LaunchTemplate.json'), 'utf8'));
