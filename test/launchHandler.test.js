@@ -147,6 +147,18 @@ function makeHandlerInput({ supportsVideo = true, supportsAPL = true } = {}) {
     'first channel is orf1 (AT default)');
   delete process.env.LAUNCH_COUNTRY;
 
+  console.log('\n--- LaunchTemplate.json: valid, binds greeting.header, no right-column block ---');
+  const fs = require('fs');
+  const tpl = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', 'skill', 'apl', 'LaunchTemplate.json'), 'utf8'));
+  assert(tpl.type === 'APL', 'is APL document');
+  const tplStr = JSON.stringify(tpl);
+  assert(tplStr.includes('launchData.properties.greeting.header'), 'template binds greeting.header');
+  assert(!tplStr.includes('width":"35%"') && !tplStr.includes('width": "35%"'), 'right-column 35% block removed');
+  assert(!tplStr.includes('width":"65%"') && !tplStr.includes('width": "65%"'), 'left-column 65% block removed (now 100%)');
+  assert(!tplStr.includes('launchData.properties.title'), 'old hardcoded title binding removed');
+  assert(!tplStr.includes('launchData.properties.categories'), 'old categories binding removed');
+  assert(!tplStr.includes('launchData.properties.logoUrl'), 'old logoUrl binding removed');
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();
