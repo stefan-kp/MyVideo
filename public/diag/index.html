@@ -207,11 +207,13 @@
 <div class="tab-content" id="tab-channels">
   <div class="row" style="margin-bottom: 12px;">
     <button id="btn-channels-refresh">Aktualisieren</button>
+    <span class="small muted">Klick auf ▶ startet den Stream und zeigt ihn unten. Echo Show wird dabei gekickt.</span>
   </div>
   <div class="card">
     <table id="channels-table"><thead><tr>
+      <th style="width: 60px;"></th>
       <th>Display</th><th>Gruppe</th><th>Source</th><th>ID</th>
-    </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
+    </tr></thead><tbody><tr><td colspan="5" class="muted">Lade...</td></tr></tbody></table>
   </div>
 </div>
 
@@ -242,6 +244,25 @@
     <table id="search-table"><thead><tr>
       <th>ID</th><th>Typ</th><th>Titel</th><th style="width: 100px;"></th>
     </tr></thead><tbody><tr><td colspan="4" class="muted">Sage was du suchst...</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- Live-TV inline player modal. Hidden by default; shown when a channel's
+     ▶ button is clicked. hls.js is loaded lazily on first open. -->
+<div id="player-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; padding:24px;">
+  <div style="background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:16px; max-width:960px; width:100%;">
+    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div>
+        <div style="font-size:18px; font-weight:bold;" id="player-title">Sender</div>
+        <div class="small muted" id="player-subtitle"></div>
+      </div>
+      <div class="row" style="gap:8px;">
+        <a id="player-vlc-link" class="sm" target="_blank" rel="noopener" style="padding:6px 12px; border:1px solid #4FC3F7; border-radius:4px; color:#4FC3F7; text-decoration:none;">In VLC öffnen</a>
+        <button id="btn-player-close" class="sm danger">Schließen</button>
+      </div>
+    </div>
+    <video id="player-video" controls autoplay style="width:100%; max-height:540px; background:#000; border-radius:4px;"></video>
+    <div class="small muted" style="margin-top:8px;" id="player-status">Stream startet... (FFmpeg braucht ca. 10 Sek. für das erste Segment)</div>
   </div>
 </div>
 
@@ -568,19 +589,108 @@ async function loadChannels() {
     const ch = await jget('/diag/channels');
     const rows = (ch.channels || []).map(c => `
       <tr>
+        <td><button class="sm primary" onclick="playChannel('${escapeHtml(c.id)}','${escapeHtml(c.displayName)}')" title="Stream starten">▶</button></td>
         <td>${escapeHtml(c.displayName)}</td>
         <td><span class="pill">${escapeHtml(c.group||'')}</span></td>
         <td class="mono small">${escapeHtml(c.source||'')}</td>
         <td class="mono small muted">${escapeHtml(c.id)}</td>
       </tr>`).join('');
     $('channels-table').querySelector('tbody').innerHTML =
-      rows || '<tr><td colspan="4" class="muted">Keine Sender</td></tr>';
+      rows || '<tr><td colspan="5" class="muted">Keine Sender</td></tr>';
   } catch (e) {
     $('channels-table').querySelector('tbody').innerHTML =
-      `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
+      `<tr><td colspan="5" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
   }
 }
 $('btn-channels-refresh').onclick = loadChannels;
+
+// ===== Inline HLS player =====
+// hls.js is loaded lazily on first ▶ click. Safari plays HLS natively, so
+// we only inject hls.js for Chrome/Edge/Firefox.
+let _hlsLib = null;
+let _currentHls = null;
+function loadHlsLib() {
+  if (_hlsLib) return Promise.resolve(_hlsLib);
+  // Safari has native HLS support — skip the library
+  const vid = document.createElement('video');
+  if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+    _hlsLib = 'native';
+    return Promise.resolve(_hlsLib);
+  }
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js';
+    s.onload = () => { _hlsLib = window.Hls; resolve(_hlsLib); };
+    s.onerror = () => reject(new Error('hls.js konnte nicht geladen werden (offline?)'));
+    document.head.appendChild(s);
+  });
+}
+
+window.playChannel = async (id, displayName) => {
+  const modal = $('player-modal');
+  const video = $('player-video');
+  $('player-title').textContent = displayName;
+  $('player-subtitle').textContent = id;
+  $('player-status').textContent = 'Stream startet... (FFmpeg braucht ca. 10 Sek. für das erste Segment)';
+  $('player-vlc-link').removeAttribute('href');
+  modal.style.display = 'flex';
+
+  // Tear down any previous hls.js instance
+  if (_currentHls && typeof _currentHls.destroy === 'function') {
+    try { _currentHls.destroy(); } catch (_) {}
+    _currentHls = null;
+  }
+  video.removeAttribute('src');
+  video.load();
+
+  let stream;
+  try {
+    stream = await jpost('/diag/channels/' + encodeURIComponent(id) + '/start');
+  } catch (e) {
+    $('player-status').textContent = 'Fehler: ' + e.message;
+    return;
+  }
+  // VLC link prefers the URL we'd use anyway (LAN-direct). External URL
+  // is kept around as fallback if a user opens VLC from outside the LAN.
+  $('player-vlc-link').href = stream.url;
+  $('player-status').textContent = 'Stream: ' + stream.url.split('?')[0] + ' (mit Token, ~10 Sek. Wartezeit auf FFmpeg)';
+
+  try {
+    const lib = await loadHlsLib();
+    if (lib === 'native') {
+      video.src = stream.url;
+      video.play().catch(() => {});
+    } else {
+      _currentHls = new lib({ liveDurationInfinity: true });
+      _currentHls.loadSource(stream.url);
+      _currentHls.attachMedia(video);
+      _currentHls.on(lib.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+      _currentHls.on(lib.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          $('player-status').textContent = 'Player-Fehler: ' + data.type + ' — ' + (data.details || '');
+        }
+      });
+    }
+  } catch (e) {
+    $('player-status').textContent = e.message;
+  }
+};
+
+function closePlayer() {
+  const modal = $('player-modal');
+  const video = $('player-video');
+  modal.style.display = 'none';
+  if (_currentHls && typeof _currentHls.destroy === 'function') {
+    try { _currentHls.destroy(); } catch (_) {}
+    _currentHls = null;
+  }
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+}
+$('btn-player-close').onclick = closePlayer;
+// Click outside modal-content closes too
+$('player-modal').onclick = (e) => { if (e.target === $('player-modal')) closePlayer(); };
 
 // ===== Stream =====
 async function loadStream() {

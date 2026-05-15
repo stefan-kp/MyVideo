@@ -248,6 +248,49 @@ diagRouter.get('/channels', (req, res) => {
   res.json({ count: flat.length, channels: flat });
 });
 
+// Start a live-TV channel from the diag UI. Returns the HLS URL with auth
+// token so an inline <video>/hls.js player or VLC can pick it up. The
+// streamer is single-slot, so this kicks any currently-playing stream
+// (Echo Show or other) — consistent with the existing "last click wins"
+// behaviour on Echo Show touch.
+//
+// Returns BOTH the external URL (BASE_URL, e.g. mytv.kaproblem.com — works
+// from anywhere) AND a same-origin URL relative to the request host so the
+// diag UI played from the LAN doesn't have to round-trip through the
+// Cloudflare tunnel.
+diagRouter.post('/channels/:id/start', async (req, res) => {
+  const ch = channels.findChannelById(req.params.id);
+  if (!ch) return res.status(404).json({ error: `unknown channel id: ${req.params.id}` });
+  if (typeof ch.resolveStream !== 'function') {
+    return res.status(500).json({ error: `channel ${ch.id} does not support resolveStream` });
+  }
+  try {
+    const stream = await ch.resolveStream();
+    // stream.url is built from BASE_URL. For LAN clients we replace the
+    // BASE_URL prefix with the same origin the diag UI was served from,
+    // so HLS segment polling stays inside the LAN.
+    const externalBase = process.env.BASE_URL || '';
+    let localUrl = stream.url;
+    if (externalBase && stream.url.startsWith(externalBase)) {
+      const host = req.get('host'); // e.g. "192.168.0.111:3377"
+      const proto = req.protocol;   // "http" on LAN
+      localUrl = `${proto}://${host}${stream.url.slice(externalBase.length)}`;
+    }
+    res.json({
+      ok: true,
+      channelId: ch.id,
+      displayName: ch.displayName,
+      url: localUrl,         // preferred for in-LAN UI
+      externalUrl: stream.url, // useful for VLC-link if user wants external access
+      mimeType: stream.mimeType,
+      isLive: stream.isLive,
+    });
+  } catch (err) {
+    console.error(`POST /diag/channels/${req.params.id}/start failed:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Streamer state - what's playing now, with full ffmpeg cmd line.
 diagRouter.get('/stream-state', (req, res) => {
   try {
@@ -603,6 +646,7 @@ diagRouter.get('/', (req, res) => {
     ui: 'GET /diag/ui  (Web-Interface, LAN-only)',
     available: [
       'GET /diag/channels',
+      'POST /diag/channels/:id/start',
       'GET /diag/stream-state',
       'GET /diag/segments',
       'GET /diag/audio/:channelId',
