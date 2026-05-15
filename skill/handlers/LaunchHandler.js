@@ -1,8 +1,7 @@
 const Alexa = require('ask-sdk-core');
 const mediathek = require('../../lib/mediathek');
-const { formatResultForSpeech } = require('../../lib/speechUtils');
 const { renderLaunchScreen } = require('../../lib/aplHelper');
-const { getLogoUrlForChannel } = require('../../lib/channels');
+const { buildGreeting } = require('../../lib/launchGreeting');
 
 const LaunchHandler = {
   canHandle(handlerInput) {
@@ -23,62 +22,37 @@ const LaunchHandler = {
         .getResponse();
     }
 
-    // Kategorisierte Nachrichten laden
-    let categorized;
+    // Gather all data (each source is allowed to fail independently)
+    let sections = [];
+    let newsOk = true;
     try {
-      categorized = await mediathek.searchCategorizedNews();
+      const cat = await mediathek.searchCategorizedNews();
+      sections = cat.sections || [];
+      if (sections.length === 0) newsOk = false;
     } catch (err) {
       console.error('Launch news search error:', err.message);
-      return handlerInput.responseBuilder
-        .speak('Die Mediathek ist gerade nicht erreichbar. Sage einen Sendernamen, zum Beispiel: spiele Tagesschau 24, oder spiele 3sat.')
-        .reprompt('Welchen Sender moechtest du sehen?')
-        .withShouldEndSession(false)
-        .getResponse();
+      newsOk = false;
     }
 
-    const { sections } = categorized;
-
-    if (!sections || sections.length === 0) {
-      return handlerInput.responseBuilder
-        .speak('Ich habe gerade keine aktuellen Nachrichten gefunden. Sage einen Sendernamen, zum Beispiel: spiele Tagesschau 24.')
-        .reprompt('Welchen Sender moechtest du sehen?')
-        .withShouldEndSession(false)
-        .getResponse();
+    let queueRow = [];
+    try {
+      const queueModule = require('../../lib/queue');
+      queueRow = queueModule.getInstance().peek(3).map(it => ({
+        id: it.id,
+        title: it.title,
+        subtitle: it.subtitle || (it.source === 'local' ? 'Lokal' : 'Mediathek'),
+      }));
+    } catch (err) {
+      console.warn('LaunchHandler: queue build failed:', err.message);
     }
 
-    // Alle Ergebnisse flach fuer Session speichern (Index-Zugriff per Touch/Sprache)
-    const allResults = sections.flatMap(s => s.results);
-
-    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
-    sessionAttributes.mediathekResults = allResults;
-    handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
-
-    // Voice: die ersten 3 Ergebnisse vorlesen
-    const spokenResults = allResults.slice(0, 3);
-    const lines = spokenResults.map((r, i) => formatResultForSpeech(r, i));
-    const moreText = allResults.length > 3 ? ` ${allResults.length - 3} weitere auf dem Display.` : '';
-    const speech = `Aktuelle Nachrichten: ${lines.join('. ')}.${moreText} Welche Nummer, oder sage Tagesschau fuer den Livestream.`;
-
-    const orfLogo = getLogoUrlForChannel('ORF');
-
-    // Live-TV-Quickbar: erste 8 wichtigste Sender
-    const QUICKBAR_IDS = ['orf1', 'orf2t', 'orf3', 'servustv', 'atv', 'pro7at', 'dasErsteHd', 'zdfHd'];
-    const liveTVChannels = QUICKBAR_IDS
-      .map(id => {
-        const ch = require('../../lib/channels').findChannelById(id);
-        if (!ch) return null;
-        return { id: ch.id, name: ch.displayName, logo: ch.logoUrl };
-      })
-      .filter(Boolean);
-
-    // Recent content for homepage row (smart-mix: 1 per show, newest 6)
     let recentContent = [];
     try {
       const contentService = require('../../lib/content/service');
       if (contentService.isEnabled()) {
         const { findNewest } = require('../../lib/content/search');
         const newest = findNewest(contentService.getIndex().all(), {
-          limit: 6, uniquePerShow: true, newerThanDaysOnly: true,
+          limit: 3, uniquePerShow: true, newerThanDaysOnly: true,
           pathConfigs: contentService.getConfig().paths,
         });
         recentContent = newest.map(e => ({
@@ -93,25 +67,38 @@ const LaunchHandler = {
       console.warn('LaunchHandler: recentContent build failed:', err.message);
     }
 
-    // Watch queue for top-of-screen row
-    let queueRow = [];
-    try {
-      const queueModule = require('../../lib/queue');
-      const items = queueModule.getInstance().peek(6);
-      queueRow = items.map(it => ({
-        id: it.id,
-        title: it.title,
-        subtitle: it.subtitle || (it.source === 'local' ? 'Lokal' : 'Mediathek'),
-      }));
-    } catch (err) {
-      console.warn('LaunchHandler: queue build failed:', err.message);
-    }
+    // Live-TV top-3 from env-driven set
+    const channelsLib = require('../../lib/channels');
+    const { getTopChannelIds } = require('../../lib/launchChannels');
+    const liveTVChannels = getTopChannelIds()
+      .map(id => {
+        const ch = channelsLib.findChannelById(id);
+        if (!ch) return null;
+        return { id: ch.id, name: ch.displayName, logo: ch.logoUrl };
+      })
+      .filter(Boolean);
 
-    renderLaunchScreen(handlerInput, sections, orfLogo, liveTVChannels, recentContent, queueRow);
+    // Adaptive greeting
+    const greeting = buildGreeting({
+      queueCount: queueRow.length,
+      recentCount: recentContent.length,
+      newsOk,
+      liveTvOk: liveTVChannels.length > 0,
+    });
+
+    // Store flat results for index-access (touch/voice "number 2")
+    const allResults = sections.flatMap(s => s.results);
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+    sessionAttributes.mediathekResults = allResults;
+    handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
+
+    renderLaunchScreen(handlerInput, {
+      sections, greeting, liveTVChannels, recentContent, queue: queueRow,
+    });
 
     return handlerInput.responseBuilder
-      .speak(speech)
-      .reprompt('Sage eine Nummer oder einen Sender.')
+      .speak(greeting.speak)
+      .reprompt(greeting.reprompt || 'Was möchtest du?')
       .withShouldEndSession(false)
       .getResponse();
   }
