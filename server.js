@@ -140,17 +140,29 @@ const POSTER_CACHE_DIR = path.join(__dirname, 'data', 'poster-cache');
 const POSTER_WIDTH = 560;  // 2x 280dp (MediaCard image width)
 const POSTER_HEIGHT = 270; // 2x 135dp (MediaCard image height — actual render size)
 
+// Pick the right fallback PNG based on the content-id prefix. Used when
+// no cover.jpg / poster.jpg was found alongside the video.
+function pickFallbackImage(id, entry) {
+  if (id.startsWith('youtube/')) return '/logos/_fallback_youtube.png';
+  if (entry && entry.type === 'episode') return '/logos/_fallback_series.png';
+  return '/logos/_fallback_local.png';
+}
+
 contentRouter.get(/^\/(.+)\/poster\.jpg$/, async (req, res) => {
   const id = req.params[0];
   // token scoped to id (so a queue add couldn't leak random posters)
   if (req.tokenPayload?.sub !== id) {
     return res.status(403).json({ error: 'token mismatch' });
   }
+  // Look up the entry so we can pick a typed fallback when no poster exists.
+  const entry = contentService.isEnabled()
+    ? contentService.getIndex().findById(id)
+    : null;
   // Resolve source first — needed for mtime cache key so we don't serve
   // a stale cached jpg after the user replaces cover.jpg in their library.
   const src = resolvePosterPath(id, contentService);
   if (!src) {
-    return res.redirect(302, '/logos/_fallback_local.png');
+    return res.redirect(302, pickFallbackImage(id, entry));
   }
   let srcMtime = 0;
   try { srcMtime = fs.statSync(src).mtimeMs; } catch (_) { /* keep 0 */ }
@@ -171,7 +183,7 @@ contentRouter.get(/^\/(.+)\/poster\.jpg$/, async (req, res) => {
     res.sendFile(cachedPath);
   } catch (err) {
     console.warn('poster resize failed:', err.message);
-    res.redirect(302, '/logos/_fallback_local.png');
+    res.redirect(302, pickFallbackImage(id, entry));
   }
 });
 

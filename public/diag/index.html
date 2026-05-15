@@ -736,12 +736,15 @@ window.ytDownloadAndQueue = async (playlistId, videoId, btn) => {
     const r = await jpost('/diag/youtube/playlists/' + playlistId + '/download/' + videoId);
     if (r.contentId) {
       // Got a contentId back - add to queue immediately.
+      // Use YouTube's CDN thumbnail directly — much cheaper than locally-
+      // resized poster.jpg (which doesn't exist for YT files anyway).
       await jpost('/diag/queue', {
         source: 'local',
         contentId: r.contentId,
         title: (v && v.title) || videoId,
         subtitle: pl.label,
         duration: v ? v.duration : 0,
+        imageUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
       });
       toast('Geladen und in Queue: ' + (v ? v.title : videoId));
     } else {
@@ -775,6 +778,7 @@ window.ytQueueDownloaded = async (playlistId, videoId) => {
         title: v.title || videoId,
         subtitle: pl.label,
         duration: v.duration,
+        imageUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
       });
       toast('In Queue: ' + v.title);
       loadOverview();

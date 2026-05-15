@@ -34,7 +34,8 @@
         { "name": "subtitle", "type": "string", "default": "" },
         { "name": "imageUrl", "type": "string", "default": "" },
         { "name": "touchAction", "type": "string", "default": "" },
-        { "name": "touchPayload", "type": "string", "default": "" }
+        { "name": "touchPayload", "type": "string", "default": "" },
+        { "name": "fallbackImage", "type": "string", "default": "" }
       ],
       "item": {
         "type": "TouchWrapper",
@@ -46,7 +47,7 @@
         },
         "item": {
           "type": "Frame",
-          "width": "280dp",
+          "width": "260dp",
           "height": "220dp",
           "backgroundColor": "@bgCard",
           "borderRadius": "@radiusCard",
@@ -56,22 +57,22 @@
             "items": [
               {
                 "type": "Image",
-                "source": "${imageUrl}",
-                "width": "280dp",
+                "source": "${imageUrl != '' ? imageUrl : fallbackImage}",
+                "width": "260dp",
                 "height": "135dp",
                 "scale": "best-fill",
-                "borderRadius": "@radiusCard",
-                "when": "${imageUrl != ''}"
+                "align": "center"
               },
               {
                 "type": "Container",
-                "padding": "@padCard",
+                "padding": "12dp",
+                "grow": 1,
                 "items": [
                   {
                     "type": "Text",
                     "text": "${title}",
                     "color": "@textPrimary",
-                    "fontSize": "20dp",
+                    "fontSize": "18dp",
                     "fontWeight": "bold",
                     "maxLines": 2
                   },
@@ -79,8 +80,9 @@
                     "type": "Text",
                     "text": "${subtitle}",
                     "color": "@textMuted",
-                    "fontSize": "16dp",
+                    "fontSize": "14dp",
                     "maxLines": 1,
+                    "paddingTop": "2dp",
                     "when": "${subtitle != ''}"
                   }
                 ]
@@ -150,19 +152,19 @@
         "items": [
           {
             "type": "Container",
-            "direction": "row",
-            "alignItems": "center",
-            "justifyContent": "spaceBetween",
-            "height": "96dp",
+            "direction": "column",
+            "alignItems": "start",
+            "paddingBottom": "@gapSection",
             "items": [
               {
                 "type": "Text",
                 "text": "${launchData.properties.greeting.header}",
                 "color": "@textPrimary",
-                "fontSize": "28dp",
+                "fontSize": "32dp",
                 "fontWeight": "bold",
                 "maxLines": 2,
-                "grow": 1
+                "width": "100%",
+                "paddingBottom": "@gapTile"
               },
               {
                 "type": "TouchWrapper",
@@ -172,15 +174,15 @@
                 "when": "${launchData.properties.greeting.priority == 'queue'}",
                 "item": {
                   "type": "Frame",
-                  "width": "280dp",
-                  "height": "80dp",
+                  "width": "320dp",
+                  "height": "72dp",
                   "backgroundColor": "@accentCta",
                   "borderRadius": "@radiusCard",
                   "item": {
                     "type": "Text",
-                    "text": "Queue weiter ▶",
+                    "text": "▶  Queue weiter",
                     "color": "@textPrimary",
-                    "fontSize": "20dp",
+                    "fontSize": "22dp",
                     "fontWeight": "bold",
                     "textAlign": "center",
                     "textAlignVertical": "center"
@@ -213,6 +215,7 @@
                     "title": "${data.title}",
                     "subtitle": "${data.subtitle}",
                     "imageUrl": "${data.imageUrl}",
+                    "fallbackImage": "/logos/_fallback_local.png",
                     "touchAction": "selectQueueItem",
                     "touchPayload": "${data.id}",
                     "paddingRight": "@gapTile"
@@ -286,6 +289,7 @@
                         "title": "${data.title}",
                         "subtitle": "${data.channel} · ${data.time}",
                         "imageUrl": "${data.imageUrl != '' ? data.imageUrl : data.logo}",
+                        "fallbackImage": "/logos/_fallback_news.png",
                         "touchAction": "selectNewsItem",
                         "touchPayload": "${data.flatIndex}",
                         "paddingBottom": "@gapTile"
@@ -308,7 +312,8 @@
                         "type": "MediaCard",
                         "title": "${data.title}",
                         "subtitle": "${data.label}",
-                        "imageUrl": "${data.imageUrl != '' ? data.imageUrl : ''}",
+                        "imageUrl": "${data.imageUrl}",
+                        "fallbackImage": "/logos/_fallback_local.png",
                         "touchAction": "selectLocalContent",
                         "touchPayload": "${data.id}",
                         "paddingBottom": "@gapTile"
@@ -358,7 +363,8 @@
                 "fontSize": "20dp",
                 "fontWeight": "bold",
                 "maxLines": 1,
-                "grow": 1
+                "grow": 1,
+                "paddingRight": "@gapTile"
               },
               {
                 "type": "TouchWrapper",
@@ -368,15 +374,15 @@
                 "when": "${launchData.properties.greeting.priority == 'queue'}",
                 "item": {
                   "type": "Frame",
-                  "width": "180dp",
-                  "height": "56dp",
+                  "width": "160dp",
+                  "height": "52dp",
                   "backgroundColor": "@accentCta",
                   "borderRadius": "@radiusCard",
                   "item": {
                     "type": "Text",
-                    "text": "Queue ▶",
+                    "text": "▶  Queue",
                     "color": "@textPrimary",
-                    "fontSize": "16dp",
+                    "fontSize": "18dp",
                     "fontWeight": "bold",
                     "textAlign": "center",
                     "textAlignVertical": "center"
@@ -409,6 +415,7 @@
                             "title": "${data.title}",
                             "subtitle": "${data.subtitle}",
                             "imageUrl": "${data.imageUrl}",
+                            "fallbackImage": "/logos/_fallback_local.png",
                             "touchAction": "selectQueueItem",
                             "touchPayload": "${data.id}",
                             "paddingRight": "8dp"
@@ -444,6 +451,7 @@
                         "title": "${data.title}",
                         "subtitle": "${data.channel} · ${data.time}",
                         "imageUrl": "${data.imageUrl != '' ? data.imageUrl : data.logo}",
+                        "fallbackImage": "/logos/_fallback_news.png",
                         "touchAction": "selectNewsItem",
                         "touchPayload": "${data.flatIndex}",
                         "paddingBottom": "8dp"
@@ -460,7 +468,8 @@
                         "type": "MediaCard",
                         "title": "${data.title}",
                         "subtitle": "${data.label}",
-                        "imageUrl": "${data.imageUrl != '' ? data.imageUrl : ''}",
+                        "imageUrl": "${data.imageUrl}",
+                        "fallbackImage": "/logos/_fallback_local.png",
                         "touchAction": "selectLocalContent",
                         "touchPayload": "${data.id}",
                         "paddingBottom": "8dp"

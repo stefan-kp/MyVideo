@@ -5,7 +5,10 @@ stream/*.m3u8
 .claude/
 .cloudflared/
 *.pem
-public/logos/
+public/logos/*
+# Fallback-PNGs sind im Repo (klein, statisch, brauchen wir bei jedem
+# Container-Boot bevor irgendeine Datei verfügbar ist).
+!public/logos/_fallback_*.png
 data/
 test-stream/
 
