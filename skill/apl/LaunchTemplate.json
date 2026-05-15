@@ -152,9 +152,6 @@
         "items": [
           {
             "type": "Container",
-            "direction": "column",
-            "alignItems": "start",
-            "paddingBottom": "@gapSection",
             "items": [
               {
                 "type": "Text",
@@ -163,31 +160,7 @@
                 "fontSize": "32dp",
                 "fontWeight": "bold",
                 "maxLines": 2,
-                "width": "100%",
-                "paddingBottom": "@gapTile"
-              },
-              {
-                "type": "TouchWrapper",
-                "minWidth": "@minTouch",
-                "minHeight": "@minTouch",
-                "onPress": { "type": "SendEvent", "arguments": ["playQueue"] },
-                "when": "${launchData.properties.greeting.priority == 'queue'}",
-                "item": {
-                  "type": "Frame",
-                  "width": "320dp",
-                  "height": "72dp",
-                  "backgroundColor": "@accentCta",
-                  "borderRadius": "@radiusCard",
-                  "item": {
-                    "type": "Text",
-                    "text": "▶  Queue weiter",
-                    "color": "@textPrimary",
-                    "fontSize": "22dp",
-                    "fontWeight": "bold",
-                    "textAlign": "center",
-                    "textAlignVertical": "center"
-                  }
-                }
+                "width": "100%"
               }
             ]
           },
@@ -290,7 +263,7 @@
                         "subtitle": "${data.channel} · ${data.time}",
                         "imageUrl": "${data.imageUrl != '' ? data.imageUrl : data.logo}",
                         "fallbackImage": "/logos/_fallback_news.png",
-                        "touchAction": "selectNewsItem",
+                        "touchAction": "selectResult",
                         "touchPayload": "${data.flatIndex}",
                         "paddingBottom": "@gapTile"
                       }
@@ -314,7 +287,7 @@
                         "subtitle": "${data.label}",
                         "imageUrl": "${data.imageUrl}",
                         "fallbackImage": "/logos/_fallback_local.png",
-                        "touchAction": "selectLocalContent",
+                        "touchAction": "selectContent",
                         "touchPayload": "${data.id}",
                         "paddingBottom": "@gapTile"
                       }
@@ -352,8 +325,7 @@
         "items": [
           {
             "type": "Container",
-            "direction": "row",
-            "alignItems": "center",
+            "alignItems": "start",
             "height": "60dp",
             "items": [
               {
@@ -363,31 +335,7 @@
                 "fontSize": "20dp",
                 "fontWeight": "bold",
                 "maxLines": 1,
-                "grow": 1,
-                "paddingRight": "@gapTile"
-              },
-              {
-                "type": "TouchWrapper",
-                "minWidth": "@minTouch",
-                "minHeight": "@minTouch",
-                "onPress": { "type": "SendEvent", "arguments": ["playQueue"] },
-                "when": "${launchData.properties.greeting.priority == 'queue'}",
-                "item": {
-                  "type": "Frame",
-                  "width": "160dp",
-                  "height": "52dp",
-                  "backgroundColor": "@accentCta",
-                  "borderRadius": "@radiusCard",
-                  "item": {
-                    "type": "Text",
-                    "text": "▶  Queue",
-                    "color": "@textPrimary",
-                    "fontSize": "18dp",
-                    "fontWeight": "bold",
-                    "textAlign": "center",
-                    "textAlignVertical": "center"
-                  }
-                }
+                "width": "100%"
               }
             ]
           },
@@ -452,7 +400,7 @@
                         "subtitle": "${data.channel} · ${data.time}",
                         "imageUrl": "${data.imageUrl != '' ? data.imageUrl : data.logo}",
                         "fallbackImage": "/logos/_fallback_news.png",
-                        "touchAction": "selectNewsItem",
+                        "touchAction": "selectResult",
                         "touchPayload": "${data.flatIndex}",
                         "paddingBottom": "8dp"
                       }
@@ -470,7 +418,7 @@
                         "subtitle": "${data.label}",
                         "imageUrl": "${data.imageUrl}",
                         "fallbackImage": "/logos/_fallback_local.png",
-                        "touchAction": "selectLocalContent",
+                        "touchAction": "selectContent",
                         "touchPayload": "${data.id}",
                         "paddingBottom": "8dp"
                       }

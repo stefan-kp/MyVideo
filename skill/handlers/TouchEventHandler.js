@@ -3,7 +3,7 @@ const channels = require('../../lib/channels');
 const { friendlyErrorMessage } = require('../../lib/streamErrorMessage');
 const { searchCategory } = require('../../lib/mediathek');
 const { formatResultForSpeech } = require('../../lib/speechUtils');
-const { renderNewsList } = require('../../lib/aplHelper');
+const { renderNewsList, renderChannelList } = require('../../lib/aplHelper');
 
 
 const TouchEventHandler = {
@@ -32,6 +32,10 @@ const TouchEventHandler = {
 
     if (action === 'selectQueueItem') {
       return handleSelectQueueItem(handlerInput, args[1]);
+    }
+
+    if (action === 'showAllChannels') {
+      return handleShowAllChannels(handlerInput);
     }
 
     console.log('TouchEvent: unbekannte Aktion', args);
@@ -229,6 +233,16 @@ async function handleSelectQueueItem(handlerInput, queueItemId) {
   return handlerInput.responseBuilder
     .speak(`Starte ${item.title}.`)
     .addVideoAppLaunchDirective(url, item.title, item.subtitle || '')
+    .getResponse();
+}
+
+function handleShowAllChannels(handlerInput) {
+  const grouped = channels.listChannels();
+  renderChannelList(handlerInput, grouped);
+  return handlerInput.responseBuilder
+    .speak('Hier sind alle Sender. Tippe auf einen oder sage seinen Namen.')
+    .reprompt('Welchen Sender möchtest du?')
+    .withShouldEndSession(false)
     .getResponse();
 }
 
