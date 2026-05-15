@@ -24,6 +24,116 @@
       }
     }
   ],
+  "layouts": {
+    "MediaCard": {
+      "parameters": [
+        { "name": "title", "type": "string" },
+        { "name": "subtitle", "type": "string", "default": "" },
+        { "name": "imageUrl", "type": "string", "default": "" },
+        { "name": "touchAction", "type": "string", "default": "" },
+        { "name": "touchPayload", "type": "string", "default": "" }
+      ],
+      "item": {
+        "type": "TouchWrapper",
+        "minWidth": "@minTouch",
+        "minHeight": "@minTouch",
+        "onPress": {
+          "type": "SendEvent",
+          "arguments": ["${touchAction}", "${touchPayload}"]
+        },
+        "item": {
+          "type": "Frame",
+          "width": "280dp",
+          "height": "220dp",
+          "backgroundColor": "@bgCard",
+          "borderRadius": "@radiusCard",
+          "item": {
+            "type": "Container",
+            "direction": "column",
+            "items": [
+              {
+                "type": "Image",
+                "source": "${imageUrl}",
+                "width": "280dp",
+                "height": "135dp",
+                "scale": "best-fill",
+                "borderRadius": "@radiusCard",
+                "when": "${imageUrl != ''}"
+              },
+              {
+                "type": "Container",
+                "padding": "@padCard",
+                "items": [
+                  {
+                    "type": "Text",
+                    "text": "${title}",
+                    "color": "@textPrimary",
+                    "fontSize": "20dp",
+                    "fontWeight": "bold",
+                    "maxLines": 2
+                  },
+                  {
+                    "type": "Text",
+                    "text": "${subtitle}",
+                    "color": "@textMuted",
+                    "fontSize": "16dp",
+                    "maxLines": 1,
+                    "when": "${subtitle != ''}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "LogoTile": {
+      "parameters": [
+        { "name": "name", "type": "string" },
+        { "name": "logoUrl", "type": "string", "default": "" },
+        { "name": "channelId", "type": "string" }
+      ],
+      "item": {
+        "type": "TouchWrapper",
+        "minWidth": "@minTouch",
+        "minHeight": "@minTouch",
+        "onPress": {
+          "type": "SendEvent",
+          "arguments": ["selectChannel", "${channelId}"]
+        },
+        "item": {
+          "type": "Frame",
+          "width": "200dp",
+          "height": "120dp",
+          "backgroundColor": "@bgCard",
+          "borderRadius": "@radiusTile",
+          "item": {
+            "type": "Container",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "items": [
+              {
+                "type": "Image",
+                "source": "${logoUrl}",
+                "width": "160dp",
+                "height": "64dp",
+                "scale": "best-fit",
+                "when": "${logoUrl != ''}"
+              },
+              {
+                "type": "Text",
+                "text": "${name}",
+                "color": "@textPrimary",
+                "fontSize": "16dp",
+                "fontWeight": "bold",
+                "when": "${logoUrl == ''}"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
   "mainTemplate": {
     "parameters": ["launchData"],
     "items": [
