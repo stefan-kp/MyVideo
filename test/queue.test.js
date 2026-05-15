@@ -104,6 +104,36 @@ function tmpFile() {
   delete process.env.QUEUE_FILE;
   _resetForTest();
 
+  console.log('\n--- deduplication: same local contentId twice rejected ---');
+  const qd = new Queue();
+  qd.file = tmpFile();
+  qd.add({ source: 'local', contentId: 'movie/a', title: 'A' });
+  let dupErr = null;
+  try {
+    qd.add({ source: 'local', contentId: 'movie/a', title: 'A again' });
+  } catch (e) { dupErr = e; }
+  assert(dupErr && dupErr.code === 'DUPLICATE', `dup error has code (got: ${dupErr && dupErr.code})`);
+  assert(dupErr && dupErr.existingId, 'dup error has existingId');
+  assert(qd.count() === 1, 'queue still has 1 item');
+
+  console.log('\n--- deduplication: same mediathek url twice rejected ---');
+  const qd2 = new Queue();
+  qd2.file = tmpFile();
+  qd2.add({ source: 'mediathek', url: 'http://x/a.m3u8', title: 'A' });
+  let dupErr2 = null;
+  try {
+    qd2.add({ source: 'mediathek', url: 'http://x/a.m3u8', title: 'A again' });
+  } catch (e) { dupErr2 = e; }
+  assert(dupErr2 && dupErr2.code === 'DUPLICATE', 'mediathek dup rejected');
+  assert(qd2.count() === 1, 'queue still has 1 item');
+
+  console.log('\n--- deduplication: different sources do not collide ---');
+  const qd3 = new Queue();
+  qd3.file = tmpFile();
+  qd3.add({ source: 'local', contentId: 'movie/a', title: 'Local A' });
+  qd3.add({ source: 'mediathek', url: 'http://x/movie-a.m3u8', title: 'Mediathek A' });
+  assert(qd3.count() === 2, 'different sources OK');
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();

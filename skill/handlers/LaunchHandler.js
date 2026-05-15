@@ -115,6 +115,13 @@ const LaunchHandler = {
     const allResults = sections.flatMap(s => s.results);
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
     sessionAttributes.mediathekResults = allResults;
+    // If the greeting asks "Soll ich abspielen?" — set a pendingAction so a
+    // subsequent AMAZON.YesIntent knows what to do.
+    if (greeting.priority === 'queue') {
+      sessionAttributes.pendingAction = 'play_queue';
+    } else {
+      delete sessionAttributes.pendingAction;
+    }
     handlerInput.attributesManager.setSessionAttributes(sessionAttributes);
 
     renderLaunchScreen(handlerInput, {

@@ -22,6 +22,7 @@ const SearchEverythingHandler = require('./skill/handlers/SearchEverythingHandle
 const ListNewContentHandler = require('./skill/handlers/ListNewContentHandler');
 const PlayShowHandler = require('./skill/handlers/PlayShowHandler');
 const PlayQueueHandler = require('./skill/handlers/PlayQueueHandler');
+const { LaunchQueueYesHandler, LaunchQueueNoHandler } = require('./skill/handlers/LaunchQueueYesHandler');
 const QueuePeekHandler = require('./skill/handlers/QueuePeekHandler');
 const PlayMediathekResultHandler = require('./skill/handlers/PlayMediathekResultHandler');
 const PlayCategoryHandler = require('./skill/handlers/PlayCategoryHandler');
@@ -556,6 +557,9 @@ diagRouter.post('/queue', queueJson, (req, res) => {
     const item = queueModule.getInstance().add(input);
     res.status(201).json(item);
   } catch (err) {
+    if (err.code === 'DUPLICATE') {
+      return res.status(409).json({ error: err.message, existingId: err.existingId });
+    }
     res.status(400).json({ error: err.message });
   }
 });
@@ -640,6 +644,13 @@ const skillBuilder = Alexa.SkillBuilders.custom()
   .withApiClient(new Alexa.DefaultApiClient())
   .addRequestHandlers(
     LaunchHandler,
+    // LaunchQueueYes/No must come BEFORE SummaryYes/No: both match
+    // AMAZON.YesIntent/NoIntent but on different pendingAction values.
+    // The SDK picks the first canHandle()=true handler, so listing this
+    // handler first lets a YesIntent in 'play_queue' context route here
+    // without falling through to summary.
+    LaunchQueueYesHandler,
+    LaunchQueueNoHandler,
     PlayNewsHandler,
     SummaryHandler,
     SummaryYesHandler,

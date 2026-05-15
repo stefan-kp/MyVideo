@@ -2,6 +2,9 @@
   "type": "APL",
   "version": "2024.2",
   "theme": "dark",
+  "import": [
+    { "name": "alexa-viewport-profiles", "version": "1.4.0" }
+  ],
   "resources": [
     {
       "colors": {

@@ -264,7 +264,10 @@ async function jpost(url, body) {
   const r = await fetch(url, opts);
   if (!r.ok) {
     const text = await r.text();
-    throw new Error(`${url} -> HTTP ${r.status}: ${text.slice(0, 200)}`);
+    const err = new Error(`${url} -> HTTP ${r.status}: ${text.slice(0, 200)}`);
+    err.status = r.status;
+    err.body = text;
+    throw err;
   }
   return r.json();
 }
@@ -424,7 +427,10 @@ window.queueAddLocal = async (entry) => {
     });
     toast('In Queue: ' + (entry.title || entry.filename));
     loadOverview();
-  } catch (e) { toast('Fehler: ' + e.message, true); }
+  } catch (e) {
+    if (e.status === 409) toast('Schon in der Queue', true);
+    else toast('Fehler: ' + e.message, true);
+  }
 };
 window.queueAddMediathek = async (entry) => {
   try {
@@ -438,7 +444,10 @@ window.queueAddMediathek = async (entry) => {
     });
     toast('In Queue: ' + entry.title);
     loadOverview();
-  } catch (e) { toast('Fehler: ' + e.message, true); }
+  } catch (e) {
+    if (e.status === 409) toast('Schon in der Queue', true);
+    else toast('Fehler: ' + e.message, true);
+  }
 };
 
 // Click a show name anywhere in the UI → jump to Search tab and search for it.
@@ -743,7 +752,8 @@ window.ytDownloadAndQueue = async (playlistId, videoId, btn) => {
     loadYoutube();
     loadOverview();
   } catch (e) {
-    toast('Download fehlgeschlagen: ' + e.message, true);
+    if (e.status === 409) toast('Schon in der Queue', true);
+    else toast('Download fehlgeschlagen: ' + e.message, true);
     if (btn) { btn.disabled = false; btn.textContent = 'Laden + Queue'; }
   }
 };
@@ -772,7 +782,8 @@ window.ytQueueDownloaded = async (playlistId, videoId) => {
       toast('Datei vorhanden, aber kein contentId gefunden. Reindex läuft.', true);
     }
   } catch (e) {
-    toast('Fehler: ' + e.message, true);
+    if (e.status === 409) toast('Schon in der Queue', true);
+    else toast('Fehler: ' + e.message, true);
   }
 };
 
