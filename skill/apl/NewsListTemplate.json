@@ -2,6 +2,24 @@
   "type": "APL",
   "version": "2024.2",
   "theme": "dark",
+  "resources": [
+    {
+      "colors": {
+        "bgBase": "#0B1220",
+        "bgCard": "#FFFFFF14",
+        "accent": "#4FC3F7",
+        "textPrimary": "#FFFFFF",
+        "textMuted": "#B0BEC5",
+        "textDim": "#78909C"
+      },
+      "dimensions": {
+        "radiusCard": "14dp",
+        "padCard": "16dp",
+        "gapTile": "10dp",
+        "minTouch": "80dp"
+      }
+    }
+  ],
   "mainTemplate": {
     "parameters": ["newsData"],
     "items": [
@@ -77,7 +95,7 @@
                   {
                     "type": "Text",
                     "text": "${data.title}",
-                    "color": "#4FC3F7",
+                    "color": "@accent",
                     "fontSize": "24dp",
                     "fontWeight": "bold",
                     "paddingTop": "12dp",
@@ -115,7 +133,7 @@
                                   {
                                     "type": "Text",
                                     "text": "${data.flatIndex + 1}",
-                                    "color": "#4FC3F7",
+                                    "color": "@accent",
                                     "fontSize": "28dp",
                                     "fontWeight": "bold",
                                     "width": "40dp"
@@ -150,19 +168,19 @@
                                           {
                                             "type": "Text",
                                             "text": "${data.channel}",
-                                            "color": "#B0BEC5",
+                                            "color": "@textMuted",
                                             "fontSize": "18dp"
                                           },
                                           {
                                             "type": "Text",
                                             "text": " · ${data.time}",
-                                            "color": "#78909C",
+                                            "color": "@textDim",
                                             "fontSize": "18dp"
                                           },
                                           {
                                             "type": "Text",
                                             "text": " · ${data.duration}",
-                                            "color": "#78909C",
+                                            "color": "@textDim",
                                             "fontSize": "18dp",
                                             "when": "${data.duration != ''}"
                                           }

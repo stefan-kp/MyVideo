@@ -2,6 +2,24 @@
   "type": "APL",
   "version": "2024.2",
   "theme": "dark",
+  "resources": [
+    {
+      "colors": {
+        "bgBase": "#0B1220",
+        "bgCard": "#FFFFFF14",
+        "accent": "#4FC3F7",
+        "textPrimary": "#FFFFFF",
+        "textMuted": "#B0BEC5",
+        "textDim": "#78909C"
+      },
+      "dimensions": {
+        "radiusCard": "14dp",
+        "padCard": "16dp",
+        "gapTile": "10dp",
+        "minTouch": "80dp"
+      }
+    }
+  ],
   "mainTemplate": {
     "parameters": ["channelData"],
     "items": [
@@ -40,7 +58,7 @@
                 "items": [
                   {
                     "type": "Frame",
-                    "backgroundColor": "rgba(255,255,255,0.05)",
+                    "backgroundColor": "@bgCard",
                     "borderRadius": "12dp",
                     "paddingLeft": "16dp",
                     "paddingRight": "20dp",
@@ -75,7 +93,7 @@
                               {
                                 "type": "Text",
                                 "text": "TV",
-                                "color": "#78909C",
+                                "color": "@textDim",
                                 "fontSize": "20dp",
                                 "textAlign": "center"
                               }
@@ -96,7 +114,7 @@
                               {
                                 "type": "Text",
                                 "text": "${data.group}",
-                                "color": "#78909C",
+                                "color": "@textDim",
                                 "fontSize": "18dp",
                                 "paddingTop": "2dp"
                               }
