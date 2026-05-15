@@ -2,6 +2,28 @@
   "type": "APL",
   "version": "2024.2",
   "theme": "dark",
+  "resources": [
+    {
+      "colors": {
+        "bgBase": "#0B1220",
+        "bgCard": "#FFFFFF14",
+        "bgCardAlt": "#FFFFFF08",
+        "accent": "#4FC3F7",
+        "accentCta": "#1F6FEB",
+        "textPrimary": "#FFFFFF",
+        "textMuted": "#B0BEC5",
+        "textDim": "#78909C"
+      },
+      "dimensions": {
+        "radiusCard": "14dp",
+        "radiusTile": "12dp",
+        "padCard": "16dp",
+        "gapSection": "18dp",
+        "gapTile": "10dp",
+        "minTouch": "80dp"
+      }
+    }
+  ],
   "mainTemplate": {
     "parameters": ["launchData"],
     "items": [
@@ -29,7 +51,7 @@
               {
                 "type": "Text",
                 "text": "Deine Queue (${launchData.properties.queue.length})",
-                "color": "#79c0ff",
+                "color": "@accent",
                 "fontSize": "16dp",
                 "fontWeight": "bold",
                 "paddingBottom": "6dp"
@@ -63,7 +85,7 @@
                           {
                             "type": "Container",
                             "items": [
-                              { "type": "Text", "text": "${data.subtitle}", "color": "#79c0ff", "fontSize": "12dp" },
+                              { "type": "Text", "text": "${data.subtitle}", "color": "@accent", "fontSize": "12dp" },
                               { "type": "Text", "text": "${data.title}", "color": "white", "fontSize": "16dp", "maxLines": 2 }
                             ]
                           }
@@ -94,7 +116,7 @@
                 "items": [
                   {
                     "type": "Frame",
-                    "backgroundColor": "rgba(255,255,255,0.10)",
+                    "backgroundColor": "@bgCard",
                     "borderRadius": "8dp",
                     "paddingLeft": "6dp",
                     "paddingRight": "6dp",
@@ -148,7 +170,7 @@
                       {
                         "type": "Container",
                         "items": [
-                          { "type": "Text", "text": "${data.label}", "color": "#4FC3F7", "fontSize": "14dp" },
+                          { "type": "Text", "text": "${data.label}", "color": "@accent", "fontSize": "14dp" },
                           { "type": "Text", "text": "${data.title}", "color": "white", "fontSize": "16dp", "maxLines": 2 }
                         ]
                       }
@@ -173,7 +195,7 @@
                   {
                     "type": "Text",
                     "text": "${data.title}",
-                    "color": "#4FC3F7",
+                    "color": "@accent",
                     "fontSize": "24dp",
                     "fontWeight": "bold",
                     "paddingTop": "12dp",
@@ -195,7 +217,7 @@
                         "items": [
                           {
                             "type": "Frame",
-                            "backgroundColor": "${data.flatIndex % 2 == 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}",
+                            "backgroundColor": "${data.flatIndex % 2 == 0 ? '@bgCard' : '@bgCardAlt'}",
                             "borderRadius": "12dp",
                             "paddingLeft": "20dp",
                             "paddingRight": "20dp",
@@ -211,7 +233,7 @@
                                   {
                                     "type": "Text",
                                     "text": "${data.flatIndex + 1}",
-                                    "color": "#4FC3F7",
+                                    "color": "@accent",
                                     "fontSize": "28dp",
                                     "fontWeight": "bold",
                                     "width": "40dp"
@@ -246,19 +268,19 @@
                                           {
                                             "type": "Text",
                                             "text": "${data.channel}",
-                                            "color": "#B0BEC5",
+                                            "color": "@textMuted",
                                             "fontSize": "18dp"
                                           },
                                           {
                                             "type": "Text",
                                             "text": " · ${data.time}",
-                                            "color": "#78909C",
+                                            "color": "@textDim",
                                             "fontSize": "18dp"
                                           },
                                           {
                                             "type": "Text",
                                             "text": " · ${data.duration}",
-                                            "color": "#78909C",
+                                            "color": "@textDim",
                                             "fontSize": "18dp",
                                             "when": "${data.duration != ''}"
                                           }
