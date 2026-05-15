@@ -2,6 +2,7 @@ const Alexa = require('ask-sdk-core');
 const mediathek = require('../../lib/mediathek');
 const { renderLaunchScreen } = require('../../lib/aplHelper');
 const { buildGreeting } = require('../../lib/launchGreeting');
+const { generateStreamToken } = require('../../lib/auth');
 
 const LaunchHandler = {
   canHandle(handlerInput) {
@@ -34,14 +35,28 @@ const LaunchHandler = {
       newsOk = false;
     }
 
+    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+
     let queueRow = [];
     try {
       const queueModule = require('../../lib/queue');
-      queueRow = queueModule.getInstance().peek(3).map(it => ({
-        id: it.id,
-        title: it.title,
-        subtitle: it.subtitle || (it.source === 'local' ? 'Lokal' : 'Mediathek'),
-      }));
+      queueRow = queueModule.getInstance().peek(3).map(it => {
+        let imageUrl = it.imageUrl || '';
+        if (!imageUrl && it.source === 'local' && it.contentId) {
+          try {
+            const tok = process.env.JWT_SECRET ? `?token=${generateStreamToken(it.contentId)}` : '';
+            imageUrl = `${baseUrl}/content/${it.contentId}/poster.jpg${tok}`;
+          } catch (err) {
+            // JWT secret may be missing in tests — leave imageUrl empty.
+          }
+        }
+        return {
+          id: it.id,
+          title: it.title,
+          subtitle: it.subtitle || (it.source === 'local' ? 'Lokal' : 'Mediathek'),
+          imageUrl,
+        };
+      });
     } catch (err) {
       console.warn('LaunchHandler: queue build failed:', err.message);
     }
@@ -55,13 +70,22 @@ const LaunchHandler = {
           limit: 3, uniquePerShow: true, newerThanDaysOnly: true,
           pathConfigs: contentService.getConfig().paths,
         });
-        recentContent = newest.map(e => ({
-          id: e.id,
-          label: e.pathLabel,
-          title: e.type === 'episode'
-            ? `${e.show} S${String(e.season || 0).padStart(2, '0')}E${String(e.episode || 0).padStart(2, '0')}`
-            : (e.title || e.filename),
-        }));
+        recentContent = newest.map(e => {
+          let posterToken = '';
+          try {
+            posterToken = process.env.JWT_SECRET ? `?token=${generateStreamToken(e.id)}` : '';
+          } catch (err) {
+            posterToken = '';
+          }
+          return {
+            id: e.id,
+            label: e.pathLabel,
+            title: e.type === 'episode'
+              ? `${e.show} S${String(e.season || 0).padStart(2, '0')}E${String(e.episode || 0).padStart(2, '0')}`
+              : (e.title || e.filename),
+            imageUrl: `${baseUrl}/content/${e.id}/poster.jpg${posterToken}`,
+          };
+        });
       }
     } catch (err) {
       console.warn('LaunchHandler: recentContent build failed:', err.message);

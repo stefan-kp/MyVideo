@@ -147,6 +147,49 @@ function makeHandlerInput({ supportsVideo = true, supportsAPL = true } = {}) {
     'first channel is orf1 (AT default)');
   delete process.env.LAUNCH_COUNTRY;
 
+  console.log('\n--- LaunchHandler: news items get logo URLs from newsChannelMapping ---');
+  mockModule('../lib/mediathek', {
+    searchCategorizedNews: async () => ({ sections: [{ title: 'Top', results: [
+      { title: 'Heute Journal', channel: 'ZDF', duration: 1200, timestamp: Date.now()/1000, url: 'http://x', imageUrl: '' },
+    ] }] }),
+  });
+  mockModule('../lib/queue', { getInstance: () => ({ peek: () => [], count: () => 0 }) });
+  process.env.BASE_URL = 'http://test.local';
+  delete require.cache[require.resolve('../skill/handlers/LaunchHandler')];
+  delete require.cache[require.resolve('../lib/newsChannelMapping')];
+  delete require.cache[require.resolve('../lib/aplHelper')];
+  const LH5 = require('../skill/handlers/LaunchHandler');
+  hi = makeHandlerInput();
+  resp = await LH5.handle(hi);
+  const d5 = resp.directives.find(d => d.type === 'Alexa.Presentation.APL.RenderDocument');
+  const newsResults = d5.datasources.launchData.properties.sections[0].results;
+  assert(newsResults.length === 1, '1 news item');
+  assert(newsResults[0].logo && newsResults[0].logo.includes('zdf_hd.png'),
+    `zdf logo (got: ${newsResults[0].logo})`);
+  delete process.env.BASE_URL;
+
+  console.log('\n--- LaunchHandler: local content gets poster URL ---');
+  mockModule('../lib/content/service', {
+    isEnabled: () => true,
+    getIndex: () => ({ all: () => [{ id: 'show/s1/ep', path: '/x/ep.mp4', pathLabel: 'Serien', type: 'episode', show: 'X', season: 1, episode: 1 }] }),
+    getConfig: () => ({ paths: [] }),
+  });
+  mockModule('../lib/content/search', {
+    findNewest: () => [{ id: 'show/s1/ep', pathLabel: 'Serien', type: 'episode', show: 'X', season: 1, episode: 1 }],
+  });
+  process.env.BASE_URL = 'http://test.local';
+  delete require.cache[require.resolve('../skill/handlers/LaunchHandler')];
+  delete require.cache[require.resolve('../lib/aplHelper')];
+  const LH6 = require('../skill/handlers/LaunchHandler');
+  hi = makeHandlerInput();
+  resp = await LH6.handle(hi);
+  const d6 = resp.directives.find(d => d.type === 'Alexa.Presentation.APL.RenderDocument');
+  const local = d6.datasources.launchData.properties.recentContent;
+  assert(local.length === 1, '1 local entry');
+  assert(local[0].imageUrl && local[0].imageUrl.includes('show/s1/ep/poster.jpg'),
+    `poster URL (got: ${local[0].imageUrl})`);
+  delete process.env.BASE_URL;
+
   console.log('\n--- LaunchTemplate.json: valid, binds greeting.header, no right-column block ---');
   const fs = require('fs');
   const tpl = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', 'skill', 'apl', 'LaunchTemplate.json'), 'utf8'));
