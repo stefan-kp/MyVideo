@@ -207,7 +207,7 @@
 <div class="tab-content" id="tab-channels">
   <div class="row" style="margin-bottom: 12px;">
     <button id="btn-channels-refresh">Aktualisieren</button>
-    <span class="small muted">Klick auf ▶ startet den Stream und zeigt ihn unten. Echo Show wird dabei gekickt.</span>
+    <span class="small muted">▶ Browser (via Pi-Transcode, kickt Echo Show) · 📺 VLC (direkt von FRITZ!Box, Pi bleibt idle)</span>
   </div>
   <div class="card">
     <table id="channels-table"><thead><tr>
@@ -589,7 +589,10 @@ async function loadChannels() {
     const ch = await jget('/diag/channels');
     const rows = (ch.channels || []).map(c => `
       <tr>
-        <td><button class="sm primary" onclick="playChannel('${escapeHtml(c.id)}','${escapeHtml(c.displayName)}')" title="Stream starten">▶</button></td>
+        <td style="white-space:nowrap;">
+          <button class="sm primary" onclick="playChannel('${escapeHtml(c.id)}','${escapeHtml(c.displayName)}')" title="Im Browser (via Pi-Transcode)">▶</button>
+          <button class="sm" onclick="vlcChannel('${escapeHtml(c.id)}','${escapeHtml(c.displayName)}')" title="In VLC (direkt von FRITZ!Box)" style="margin-left:4px;">📺</button>
+        </td>
         <td>${escapeHtml(c.displayName)}</td>
         <td><span class="pill">${escapeHtml(c.group||'')}</span></td>
         <td class="mono small">${escapeHtml(c.source||'')}</td>
@@ -650,10 +653,13 @@ window.playChannel = async (id, displayName) => {
     $('player-status').textContent = 'Fehler: ' + e.message;
     return;
   }
-  // VLC link prefers the URL we'd use anyway (LAN-direct). External URL
-  // is kept around as fallback if a user opens VLC from outside the LAN.
-  $('player-vlc-link').href = stream.url;
   $('player-status').textContent = 'Stream: ' + stream.url.split('?')[0] + ' (mit Token, ~10 Sek. Wartezeit auf FFmpeg)';
+
+  // VLC link prefers the FRITZ!Box-direct RTSP URL (no Pi-transcode needed).
+  // Falls back to the HLS URL if there's no FRITZ!Box source for this channel.
+  jget('/diag/channels/' + encodeURIComponent(id) + '/direct-url')
+    .then(r => { $('player-vlc-link').href = r.url; })
+    .catch(() => { $('player-vlc-link').href = stream.url; });
 
   try {
     const lib = await loadHlsLib();
@@ -689,6 +695,36 @@ function closePlayer() {
   video.load();
 }
 $('btn-player-close').onclick = closePlayer;
+
+// VLC button: resolve direct FRITZ!Box RTSP (or HLS upstream for HLS-only
+// channels) and open it. The browser will offer to download a tiny stub
+// — when the user opens it with VLC the stream starts. No Pi-transcode.
+window.vlcChannel = async (id, displayName) => {
+  try {
+    const r = await jget('/diag/channels/' + encodeURIComponent(id) + '/direct-url');
+    // For RTSP we can't open in a tab (browsers don't understand the
+    // protocol). Best UX: show the URL in a small toast/dialog so the
+    // user can copy-paste into VLC, AND try window.open in case the
+    // browser is configured to hand off rtsp:// to a system handler.
+    if (r.url.startsWith('rtsp://')) {
+      // macOS/Linux: rtsp:// hand-off depends on OS settings. We try both.
+      window.location.href = r.url;
+      // Fallback: also surface the URL so the user can copy
+      setTimeout(() => {
+        if (!confirm(`${displayName}\n\nFalls VLC nicht automatisch öffnet, kopiere diese URL und füge sie in VLC ein (Medien → Netzwerkstream öffnen):\n\n${r.url}\n\nOK = nochmal kopieren-Dialog. Abbrechen = ignorieren.`)) return;
+        navigator.clipboard?.writeText(r.url).then(
+          () => toast('URL in Zwischenablage'),
+          () => toast('Konnte nicht in Zwischenablage kopieren', true)
+        );
+      }, 800);
+    } else {
+      // HLS upstream — modern browsers can stream this directly
+      window.open(r.url, '_blank');
+    }
+  } catch (e) {
+    toast('Fehler: ' + e.message, true);
+  }
+};
 // Click outside modal-content closes too
 $('player-modal').onclick = (e) => { if (e.target === $('player-modal')) closePlayer(); };
 

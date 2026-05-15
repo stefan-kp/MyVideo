@@ -291,6 +291,55 @@ diagRouter.post('/channels/:id/start', async (req, res) => {
   }
 });
 
+// Return the FRITZ!Box-native RTSP URL for a channel WITHOUT starting any
+// transcode on the Pi. The diag UI's 'In VLC öffnen' button uses this so
+// VLC streams directly from the FRITZ!Box (RTSP-capable), bypassing the
+// Pi's ffmpeg slot entirely.
+//
+// Falls back to the standard transcoded HLS URL for HLS-only channels
+// (e.g. ZDFneo HD which has no FRITZ!Box tuner).
+diagRouter.get('/channels/:id/direct-url', async (req, res) => {
+  const ch = channels.findChannelById(req.params.id);
+  if (!ch) return res.status(404).json({ error: `unknown channel id: ${req.params.id}` });
+  // Prefer FRITZ!Box source even if wrapped in ChannelWithFallback
+  const fbSource = ch.primary && ch.primary.source === 'fritzbox' ? ch.primary
+                 : ch.source === 'fritzbox' ? ch
+                 : null;
+  if (fbSource && fbSource.tunerId) {
+    try {
+      const { resolveDirectRtspUrl } = require('./lib/sources/fritzboxSource');
+      const rtsp = await resolveDirectRtspUrl(fbSource.tunerId);
+      if (rtsp) {
+        return res.json({
+          ok: true,
+          channelId: ch.id,
+          displayName: ch.displayName,
+          url: rtsp,
+          mimeType: 'application/x-rtsp',
+          source: 'fritzbox-direct',
+        });
+      }
+    } catch (err) {
+      console.warn(`/diag/channels/${ch.id}/direct-url: RTSP resolve failed, falling back:`, err.message);
+    }
+  }
+  // No FRITZ!Box → check for HLS upstream (fallback chain or hls-only channel)
+  const hlsUpstream = ch.fallback && ch.fallback.upstreamUrl
+                   || ch.upstreamUrl
+                   || null;
+  if (hlsUpstream) {
+    return res.json({
+      ok: true,
+      channelId: ch.id,
+      displayName: ch.displayName,
+      url: hlsUpstream,
+      mimeType: 'application/vnd.apple.mpegurl',
+      source: 'hls-upstream',
+    });
+  }
+  res.status(404).json({ error: `no direct URL available for ${ch.id}` });
+});
+
 // Streamer state - what's playing now, with full ffmpeg cmd line.
 diagRouter.get('/stream-state', (req, res) => {
   try {
@@ -647,6 +696,7 @@ diagRouter.get('/', (req, res) => {
     available: [
       'GET /diag/channels',
       'POST /diag/channels/:id/start',
+      'GET /diag/channels/:id/direct-url',
       'GET /diag/stream-state',
       'GET /diag/segments',
       'GET /diag/audio/:channelId',
