@@ -152,13 +152,26 @@
       <th style="width: 40px;">#</th>
       <th>Titel</th>
       <th>Quelle</th>
+      <th style="width: 110px;">Status</th>
       <th style="width: 140px;">Aktionen</th>
-    </tr></thead><tbody><tr><td colspan="4" class="muted">Lade...</td></tr></tbody></table>
+    </tr></thead><tbody><tr><td colspan="5" class="muted">Lade...</td></tr></tbody></table>
   </div>
 </div>
 
 <!-- ===== YouTube ===== -->
 <div class="tab-content" id="tab-youtube">
+  <div class="card">
+    <div class="card-title">Einzelnes Video direkt in die Queue</div>
+    <div class="row" style="gap: 8px; flex-wrap: wrap;">
+      <input type="text" id="yt-single-url" placeholder="YouTube-URL (youtu.be/, watch?v=, /shorts/, ...) oder Video-ID" style="flex: 2; min-width: 280px;">
+      <input type="text" id="yt-single-title" placeholder="Titel (optional, sonst Platzhalter)" style="flex: 1; min-width: 160px;">
+      <button class="primary" id="btn-yt-single-add">+ Queue</button>
+    </div>
+    <p class="small muted" style="margin: 6px 0 0;">
+      Video wird im Hintergrund heruntergeladen. Bis der Download fertig ist,
+      steht es als "wird geladen…" in der Queue. Status sichtbar im Queue-Tab.
+    </p>
+  </div>
   <div class="card">
     <div class="card-title">Neue Playlist hinzufügen</div>
     <div class="row" style="gap: 8px; flex-wrap: wrap;">
@@ -388,6 +401,16 @@ function updateQueueBadge(n) {
 }
 
 // ===== Queue =====
+function statusBadge(status, errorMsg) {
+  const s = status || 'ready';
+  if (s === 'ready') return '<span class="pill" style="background:#1f6feb33;color:#79c0ff;">bereit</span>';
+  if (s === 'downloading') return '<span class="pill" style="background:#9e6a0344;color:#f2cc60;">lädt…</span>';
+  if (s === 'failed') return `<span class="pill" style="background:#a4040444;color:#ff7b72;" title="${escapeHtml(errorMsg || '')}">⚠ Fehler</span>`;
+  return `<span class="pill">${escapeHtml(s)}</span>`;
+}
+
+let _queuePollTimer = null;
+
 async function loadQueue() {
   try {
     const q = await jget('/diag/queue');
@@ -398,8 +421,10 @@ async function loadQueue() {
         <td>
           <div>${escapeHtml(it.title)}</div>
           <div class="small muted">${escapeHtml(it.subtitle || '')}</div>
+          ${it.status === 'failed' && it.error ? `<div class="small" style="color:#ff7b72;">${escapeHtml(it.error)}</div>` : ''}
         </td>
         <td><span class="pill ${it.source}">${escapeHtml(it.source)}</span></td>
+        <td>${statusBadge(it.status, it.error)}</td>
         <td>
           <button class="sm" onclick="queueUp('${escapeHtml(it.id)}')" ${i === 0 ? 'disabled' : ''}>↑</button>
           <button class="sm" onclick="queueDown('${escapeHtml(it.id)}')" ${i === q.items.length - 1 ? 'disabled' : ''}>↓</button>
@@ -407,10 +432,18 @@ async function loadQueue() {
         </td>
       </tr>`).join('');
     $('queue-table').querySelector('tbody').innerHTML =
-      rows || '<tr><td colspan="4" class="muted">Queue ist leer. Füge Items über "Lokale Sammlung" oder "Suche" hinzu.</td></tr>';
+      rows || '<tr><td colspan="5" class="muted">Queue ist leer. Füge Items über "Lokale Sammlung", "Suche" oder "YouTube" hinzu.</td></tr>';
+
+    // Auto-poll while any item is still downloading so the user sees the
+    // status flip without manually hitting refresh.
+    const hasPending = (q.items || []).some(it => it.status === 'downloading');
+    clearTimeout(_queuePollTimer);
+    if (hasPending && document.getElementById('tab-queue').classList.contains('active')) {
+      _queuePollTimer = setTimeout(loadQueue, 3000);
+    }
   } catch (e) {
     $('queue-table').querySelector('tbody').innerHTML =
-      `<tr><td colspan="4" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
+      `<tr><td colspan="5" class="muted">Fehler: ${escapeHtml(e.message)}</td></tr>`;
   }
 }
 $('btn-queue-refresh').onclick = loadQueue;
@@ -846,6 +879,25 @@ $('btn-yt-add').onclick = async () => {
     loadYoutube();
   } catch (e) {
     toast('Fehler: ' + e.message, true);
+  }
+};
+
+// Single-video → Queue (async download)
+$('btn-yt-single-add').onclick = async () => {
+  const youtubeUrl = $('yt-single-url').value.trim();
+  const title = $('yt-single-title').value.trim();
+  if (!youtubeUrl) { toast('URL erforderlich', true); return; }
+  try {
+    const body = { youtubeUrl };
+    if (title) body.title = title;
+    const r = await jpost('/diag/queue/youtube', body);
+    toast('In Queue: ' + (title || r.videoId) + ' (lädt…)');
+    $('yt-single-url').value = '';
+    $('yt-single-title').value = '';
+    loadOverview();
+  } catch (e) {
+    if (e.status === 409) toast('Schon in der Queue', true);
+    else toast('Fehler: ' + e.message, true);
   }
 };
 

@@ -134,6 +134,36 @@ function tmpFile() {
   qd3.add({ source: 'mediathek', url: 'http://x/movie-a.m3u8', title: 'Mediathek A' });
   assert(qd3.count() === 2, 'different sources OK');
 
+  console.log('\n--- youtube_pending source: needs youtubeUrl ---');
+  const qy = new Queue();
+  qy.file = tmpFile();
+  let ytErr = null;
+  try { qy.add({ source: 'youtube_pending', title: 'X' }); } catch (e) { ytErr = e; }
+  assert(ytErr && /youtubeUrl/.test(ytErr.message), 'requires youtubeUrl');
+  const yt1 = qy.add({ source: 'youtube_pending', youtubeUrl: 'https://youtu.be/abc123', title: 'YT 1', status: 'downloading' });
+  assert(yt1.status === 'downloading', 'status preserved');
+  assert(yt1.youtubeUrl === 'https://youtu.be/abc123', 'youtubeUrl preserved');
+
+  console.log('\n--- youtube_pending dedup by youtubeUrl ---');
+  let dupYt = null;
+  try {
+    qy.add({ source: 'youtube_pending', youtubeUrl: 'https://youtu.be/abc123', title: 'YT 1 again' });
+  } catch (e) { dupYt = e; }
+  assert(dupYt && dupYt.code === 'DUPLICATE', 'yt dup rejected');
+
+  console.log('\n--- update() patches an item in place ---');
+  const updated = qy.update(yt1.id, { status: 'ready', source: 'local', contentId: 'youtube/foo/abc123' });
+  assert(updated && updated.status === 'ready', 'status flipped to ready');
+  assert(updated.source === 'local', 'source flipped to local');
+  assert(updated.contentId === 'youtube/foo/abc123', 'contentId set');
+  assert(qy.update('nonexistent-id', { status: 'x' }) === null, 'unknown id returns null');
+
+  console.log('\n--- default status is ready ---');
+  const qDefault = new Queue();
+  qDefault.file = tmpFile();
+  const d = qDefault.add({ source: 'mediathek', url: 'http://x/d.m3u8', title: 'D' });
+  assert(d.status === 'ready', 'default status ready');
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 })();

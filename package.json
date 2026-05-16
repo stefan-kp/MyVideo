@@ -10,6 +10,7 @@
     "test:content": "node scripts/test-content.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "ask-sdk-core": "^2.14.0",
     "ask-sdk-express-adapter": "^2.14.0",
     "axios": "^1.7.0",
@@ -18,7 +19,8 @@
     "jsonwebtoken": "^9.0.0",
     "parse-torrent-name": "^0.5.4",
     "sharp": "^0.33.5",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=18.0.0"

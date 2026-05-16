@@ -632,6 +632,54 @@ diagRouter.post('/youtube/playlists/:id/download/:videoId', async (req, res) => 
   }
 });
 
+// POST /diag/queue/youtube — add a single YouTube video by URL to the
+// queue with status='downloading'. yt-dlp runs in the background; the
+// item is upgraded to source='local' + status='ready' on success or
+// status='failed' on error. The diag UI Queue tab shows live status.
+//
+// Body: { youtubeUrl: string, title?: string }
+diagRouter.post('/queue/youtube', ytJson, (req, res) => {
+  const youtubeUrl = (req.body && req.body.youtubeUrl) || '';
+  const wantedTitle = (req.body && req.body.title) || '';
+  const { extractVideoId, makeDownloadAndAttach } = require('./lib/youtube/queueDownloader');
+  const videoId = extractVideoId(youtubeUrl);
+  if (!videoId) {
+    return res.status(400).json({ error: `Konnte keine YouTube-Video-ID extrahieren aus: ${youtubeUrl}` });
+  }
+  const queue = require('./lib/queue').getInstance();
+  let item;
+  try {
+    item = queue.add({
+      source: 'youtube_pending',
+      youtubeUrl,
+      title: wantedTitle || `YouTube ${videoId}`,
+      subtitle: 'YouTube (wird geladen…)',
+      status: 'downloading',
+      imageUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    });
+  } catch (err) {
+    if (err.code === 'DUPLICATE') {
+      return res.status(409).json({ error: err.message, existingId: err.existingId });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  const downloadAndAttach = makeDownloadAndAttach({
+    queue,
+    contentService,
+    youtubeDir: getYoutubeDir(),
+  });
+  downloadAndAttach(item.id, youtubeUrl).catch(err => {
+    console.error('[queue-yt] downloadAndAttach unexpected:', err.message);
+  });
+  res.status(202).json({
+    ok: true,
+    id: item.id,
+    videoId,
+    status: 'downloading',
+    message: 'Video in die Queue gestellt. Download läuft im Hintergrund.',
+  });
+});
+
 // Web UI for diagnostics. LAN-only via the diagRouter middleware.
 diagRouter.get('/ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'diag', 'index.html'));
@@ -719,12 +767,78 @@ diagRouter.get('/', (req, res) => {
       'DELETE /diag/youtube/playlists/:id',
       'POST /diag/youtube/playlists/:id/crawl',
       'POST /diag/youtube/playlists/:id/download/:videoId',
+      'POST /diag/queue/youtube  (body: {youtubeUrl, title?})',
     ],
     note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
   });
 });
 
 app.use('/diag', diagRouter);
+
+// --- MCP server (Model Context Protocol over Streamable HTTP) ---
+// Lets Claude / other MCP clients list the watch queue and add YouTube
+// videos to it. Auth via 'Authorization: Bearer <MCP_TOKEN>' header.
+//
+// Disabled if MCP_TOKEN env-var is unset (no point exposing it without a
+// secret on a Cloudflare-tunnelled host).
+//
+// Claude Desktop config example:
+//   "mcpServers": {
+//     "myvideo": {
+//       "command": "npx",
+//       "args": ["mcp-remote", "https://mytv.kaproblem.com/mcp",
+//                "--header", "Authorization: Bearer <token>"]
+//     }
+//   }
+// Claude Code:
+//   claude mcp add myvideo --transport http https://mytv.kaproblem.com/mcp \
+//          --header "Authorization: Bearer <token>"
+if (process.env.MCP_TOKEN) {
+  const { makeHandler: makeMcpHandler } = require('./lib/mcp/server');
+  const mcpToken = process.env.MCP_TOKEN;
+  const mcpHandler = makeMcpHandler({
+    queue: require('./lib/queue').getInstance(),
+    contentService,
+    youtubeDir: contentService.YOUTUBE_DIR
+      || path.join(__dirname, 'data', 'youtube'),
+  });
+
+  // Bearer-token auth: rejected requests get 401 with WWW-Authenticate.
+  const mcpAuth = (req, res, next) => {
+    const authHeader = req.headers['authorization'] || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      res.set('WWW-Authenticate', 'Bearer realm="myvideo-mcp"');
+      return res.status(401).json({
+        jsonrpc: '2.0',
+        error: { code: -32001, message: 'Missing Bearer token' },
+        id: null,
+      });
+    }
+    if (authHeader.slice(7) !== mcpToken) {
+      return res.status(403).json({
+        jsonrpc: '2.0',
+        error: { code: -32002, message: 'Invalid token' },
+        id: null,
+      });
+    }
+    next();
+  };
+
+  // express.json() with a generous limit because Streamable HTTP can
+  // batch multiple JSON-RPC messages in one POST.
+  const mcpJson = express.json({ limit: '4mb' });
+
+  // POST /mcp: client→server (tool calls, initialise, etc.)
+  app.post('/mcp', mcpAuth, mcpJson, mcpHandler);
+  // GET /mcp: server→client stream (SSE channel for server-initiated msgs).
+  app.get('/mcp', mcpAuth, mcpHandler);
+  // DELETE /mcp: client closes a session explicitly.
+  app.delete('/mcp', mcpAuth, mcpHandler);
+
+  console.log(`  MCP:           aktiviert (POST/GET/DELETE /mcp, token-gated)`);
+} else {
+  console.log(`  MCP:           deaktiviert (kein MCP_TOKEN env)`);
+}
 
 // --- Health Check ---
 app.get('/health', (req, res) => {
