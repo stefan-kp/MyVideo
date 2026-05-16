@@ -340,6 +340,40 @@ diagRouter.get('/channels/:id/direct-url', async (req, res) => {
   res.status(404).json({ error: `no direct URL available for ${ch.id}` });
 });
 
+// MCP status (no auth required — purely informational, LAN-only via the
+// diagRouter middleware). Exposes whether the MCP server is enabled,
+// scope (LAN-only or public), tool list, and a masked view of the
+// configured token so the admin can verify the .env is loaded correctly
+// without leaking the secret.
+diagRouter.get('/mcp/status', (req, res) => {
+  const enabled = !!process.env.MCP_TOKEN;
+  const publicMode = process.env.MCP_PUBLIC === 'true';
+  const token = process.env.MCP_TOKEN || '';
+  const tokenMasked = token
+    ? `${token.slice(0, 4)}…${token.slice(-4)} (${token.length} chars)`
+    : null;
+  // Build a same-origin URL for the MCP endpoint so the admin can
+  // copy-paste it straight into a Claude config.
+  const proto = req.protocol;
+  const host = req.get('host');
+  const mcpUrl = `${proto}://${host}/mcp`;
+  res.json({
+    enabled,
+    publicMode,
+    scope: publicMode ? 'public' : 'lan-only',
+    tokenMasked,
+    mcpUrl,
+    externalUrl: process.env.BASE_URL ? `${process.env.BASE_URL}/mcp` : null,
+    tools: enabled ? [
+      { name: 'list_queue', description: 'Liste der Videos in der Watch-Queue' },
+      { name: 'add_youtube_to_queue', description: 'YouTube-Video zur Queue hinzufügen' },
+    ] : [],
+    setupHint: enabled
+      ? null
+      : 'MCP_TOKEN in der .env setzen (z.B. mit `openssl rand -hex 32`) und den Container neu starten.',
+  });
+});
+
 // Streamer state - what's playing now, with full ffmpeg cmd line.
 diagRouter.get('/stream-state', (req, res) => {
   try {
@@ -768,6 +802,7 @@ diagRouter.get('/', (req, res) => {
       'POST /diag/youtube/playlists/:id/crawl',
       'POST /diag/youtube/playlists/:id/download/:videoId',
       'POST /diag/queue/youtube  (body: {youtubeUrl, title?})',
+      'GET /diag/mcp/status',
     ],
     note: 'LAN-only. Cloudflare-Tunnel requests get 404.',
   });
@@ -782,6 +817,11 @@ app.use('/diag', diagRouter);
 // Disabled if MCP_TOKEN env-var is unset (no point exposing it without a
 // secret on a Cloudflare-tunnelled host).
 //
+// LAN-only by default. Set MCP_PUBLIC=true to allow access from the
+// public Cloudflare-tunnel ingress IPs. The LAN check mirrors the
+// /diag/* check so users on 192.168.x.x / 10.x / 172.16-31.x get through
+// without extra config.
+//
 // Claude Desktop config example:
 //   "mcpServers": {
 //     "myvideo": {
@@ -793,7 +833,9 @@ app.use('/diag', diagRouter);
 // Claude Code:
 //   claude mcp add myvideo --transport http https://mytv.kaproblem.com/mcp \
 //          --header "Authorization: Bearer <token>"
-if (process.env.MCP_TOKEN) {
+const MCP_ENABLED = !!process.env.MCP_TOKEN;
+const MCP_PUBLIC = process.env.MCP_PUBLIC === 'true';
+if (MCP_ENABLED) {
   const { makeHandler: makeMcpHandler } = require('./lib/mcp/server');
   const mcpToken = process.env.MCP_TOKEN;
   const mcpHandler = makeMcpHandler({
@@ -802,6 +844,14 @@ if (process.env.MCP_TOKEN) {
     youtubeDir: contentService.YOUTUBE_DIR
       || path.join(__dirname, 'data', 'youtube'),
   });
+
+  // LAN-only gate (unless MCP_PUBLIC=true is set). Returns 404 to hide
+  // the endpoint's existence from non-LAN scanners, same as /diag/*.
+  const mcpLanGate = (req, res, next) => {
+    if (MCP_PUBLIC) return next();
+    if (!isLanRequest(req)) return res.status(404).json({ error: 'not found' });
+    next();
+  };
 
   // Bearer-token auth: rejected requests get 401 with WWW-Authenticate.
   const mcpAuth = (req, res, next) => {
@@ -829,13 +879,13 @@ if (process.env.MCP_TOKEN) {
   const mcpJson = express.json({ limit: '4mb' });
 
   // POST /mcp: client→server (tool calls, initialise, etc.)
-  app.post('/mcp', mcpAuth, mcpJson, mcpHandler);
+  app.post('/mcp', mcpLanGate, mcpAuth, mcpJson, mcpHandler);
   // GET /mcp: server→client stream (SSE channel for server-initiated msgs).
-  app.get('/mcp', mcpAuth, mcpHandler);
+  app.get('/mcp', mcpLanGate, mcpAuth, mcpHandler);
   // DELETE /mcp: client closes a session explicitly.
-  app.delete('/mcp', mcpAuth, mcpHandler);
+  app.delete('/mcp', mcpLanGate, mcpAuth, mcpHandler);
 
-  console.log(`  MCP:           aktiviert (POST/GET/DELETE /mcp, token-gated)`);
+  console.log(`  MCP:           aktiviert (${MCP_PUBLIC ? 'public' : 'LAN-only'}, token-gated)`);
 } else {
   console.log(`  MCP:           deaktiviert (kein MCP_TOKEN env)`);
 }

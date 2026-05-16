@@ -7,25 +7,32 @@ abfragen und YouTube-Videos hinzufügen.
 
 ## Konfiguration
 
-Setze in deiner `.env` ein **MCP_TOKEN** (langer zufälliger String,
-z.B. `openssl rand -hex 32`):
+Setze in deiner `.env`:
 
 ```bash
-MCP_TOKEN=4f3c2a1b...   # mind. 32 Zeichen empfohlen
+# Token (Pflicht — leer = MCP deaktiviert)
+MCP_TOKEN=4f3c2a1b...   # mind. 32 Zeichen empfohlen, z.B. `openssl rand -hex 32`
+
+# Sichtbarkeit (optional)
+# Default: nur aus dem lokalen Netzwerk (192.168.x.x / 10.x / 172.16-31.x / 127.0.0.1)
+# Setzen, wenn du den MCP-Endpunkt über den Cloudflare-Tunnel von überall
+# erreichen willst:
+# MCP_PUBLIC=true
 ```
 
 Ohne `MCP_TOKEN` ist der MCP-Endpunkt deaktiviert. Der Server gibt
 beim Start eine entsprechende Meldung aus:
 
 ```
-  MCP:           aktiviert (POST/GET/DELETE /mcp, token-gated)
-```
-
-oder
-
-```
+  MCP:           aktiviert (LAN-only, token-gated)
+  MCP:           aktiviert (public, token-gated)
   MCP:           deaktiviert (kein MCP_TOKEN env)
 ```
+
+Im Diag-UI gibt es einen eigenen **MCP-Tab**, der den aktuellen
+Status, die maskierte Token-Anzeige (zur Verifikation dass die .env
+geladen wurde), die verfügbaren Tools und Copy-Paste-Snippets für
+Claude Desktop / Claude Code anzeigt.
 
 ## Tools
 

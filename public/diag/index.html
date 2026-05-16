@@ -107,6 +107,7 @@
   <button data-tab="channels">Live-TV</button>
   <button data-tab="stream">Stream-Zustand</button>
   <button data-tab="search">Suche</button>
+  <button data-tab="mcp">MCP</button>
 </div>
 
 <!-- ===== Overview ===== -->
@@ -260,6 +261,81 @@
   </div>
 </div>
 
+<!-- ===== MCP ===== -->
+<div class="tab-content" id="tab-mcp">
+  <div class="card">
+    <div class="card-title">Model Context Protocol (MCP)</div>
+    <p class="small muted" style="margin-top:0;">
+      Erlaubt Claude (Desktop, Code, oder anderen MCP-Clients) deine
+      Watch-Queue abzufragen und YouTube-Videos hinzuzufügen.
+    </p>
+    <div id="mcp-status-loading" class="muted small">Lade Status...</div>
+    <div id="mcp-status-content" style="display:none;">
+      <table style="width:100%;">
+        <tr>
+          <td style="width:160px;" class="muted">Status</td>
+          <td id="mcp-status-enabled"></td>
+        </tr>
+        <tr>
+          <td class="muted">Sichtbarkeit</td>
+          <td id="mcp-status-scope"></td>
+        </tr>
+        <tr>
+          <td class="muted">Token</td>
+          <td class="mono small" id="mcp-status-token"></td>
+        </tr>
+        <tr>
+          <td class="muted">Lokale URL</td>
+          <td class="mono small" id="mcp-status-url"></td>
+        </tr>
+        <tr>
+          <td class="muted">Externe URL</td>
+          <td class="mono small" id="mcp-status-external"></td>
+        </tr>
+      </table>
+      <div id="mcp-status-hint" class="small" style="margin-top:8px; color:#f2cc60;"></div>
+    </div>
+  </div>
+
+  <div class="card" id="mcp-tools-card" style="display:none;">
+    <div class="card-title">Verfügbare Tools</div>
+    <table id="mcp-tools-table"><thead><tr>
+      <th style="width:200px;">Name</th>
+      <th>Beschreibung</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card" id="mcp-setup-card" style="display:none;">
+    <div class="card-title">Setup für Claude</div>
+    <p class="small muted" style="margin-top:0;">
+      Ersetze <span class="mono">DEIN_TOKEN</span> mit dem echten Wert aus deiner
+      <span class="mono">.env</span> Datei. Die URL ist
+      <span id="mcp-setup-url-hint" class="mono small"></span>
+      — bei <span class="mono">scope: lan-only</span> nur aus dem lokalen Netzwerk
+      erreichbar, sonst überall.
+    </p>
+
+    <div style="margin-top:12px;">
+      <div class="small" style="font-weight:bold; margin-bottom:4px;">Claude Code (CLI)</div>
+      <pre id="mcp-cmd-claude-code" class="mono" style="background:#0d1117; border:1px solid #30363d; border-radius:4px; padding:10px; overflow-x:auto; font-size:12px;"></pre>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="small" style="font-weight:bold; margin-bottom:4px;">Claude Desktop (claude_desktop_config.json)</div>
+      <pre id="mcp-cmd-claude-desktop" class="mono" style="background:#0d1117; border:1px solid #30363d; border-radius:4px; padding:10px; overflow-x:auto; font-size:12px;"></pre>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="small" style="font-weight:bold; margin-bottom:4px;">Konfiguration (.env)</div>
+      <pre class="mono" style="background:#0d1117; border:1px solid #30363d; border-radius:4px; padding:10px; overflow-x:auto; font-size:12px;"># Token (Pflicht, leer = MCP deaktiviert):
+MCP_TOKEN=$(openssl rand -hex 32)
+
+# Optional: global zugänglich machen (default: LAN-only)
+# MCP_PUBLIC=true</pre>
+    </div>
+  </div>
+</div>
+
 <!-- Live-TV inline player modal. Hidden by default; shown when a channel's
      ▶ button is clicked. hls.js is loaded lazily on first open. -->
 <div id="player-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; padding:24px;">
@@ -338,6 +414,7 @@ document.querySelectorAll('.tab-buttons button').forEach(btn => {
     if (btn.dataset.tab === 'content') loadContent();
     if (btn.dataset.tab === 'stream') loadStream();
     if (btn.dataset.tab === 'youtube') loadYoutube();
+    if (btn.dataset.tab === 'mcp') loadMcp();
   };
 });
 
@@ -988,6 +1065,72 @@ window.ytQueueDownloaded = async (playlistId, videoId) => {
     else toast('Fehler: ' + e.message, true);
   }
 };
+
+// ===== MCP =====
+async function loadMcp() {
+  $('mcp-status-loading').style.display = '';
+  $('mcp-status-content').style.display = 'none';
+  $('mcp-tools-card').style.display = 'none';
+  $('mcp-setup-card').style.display = 'none';
+  let s;
+  try {
+    s = await jget('/diag/mcp/status');
+  } catch (e) {
+    $('mcp-status-loading').textContent = 'Fehler beim Laden: ' + e.message;
+    return;
+  }
+  $('mcp-status-loading').style.display = 'none';
+  $('mcp-status-content').style.display = '';
+
+  // Status row
+  $('mcp-status-enabled').innerHTML = s.enabled
+    ? '<span class="pill" style="background:#1f6feb33;color:#79c0ff;">aktiv</span>'
+    : '<span class="pill" style="background:#a4040444;color:#ff7b72;">deaktiviert</span>';
+  $('mcp-status-scope').innerHTML = s.scope === 'lan-only'
+    ? '<span class="pill" style="background:#1f6feb33;color:#79c0ff;">LAN-only</span> <span class="small muted">(MCP_PUBLIC=true in .env für global)</span>'
+    : '<span class="pill" style="background:#9e6a0344;color:#f2cc60;">öffentlich</span> <span class="small muted">(MCP_PUBLIC=true gesetzt)</span>';
+  $('mcp-status-token').textContent = s.tokenMasked || '— (nicht konfiguriert)';
+  $('mcp-status-url').textContent = s.mcpUrl;
+  $('mcp-status-external').textContent = s.externalUrl || '— (BASE_URL nicht gesetzt)';
+  $('mcp-status-hint').textContent = s.setupHint || '';
+
+  // Tools
+  if (s.tools && s.tools.length) {
+    $('mcp-tools-card').style.display = '';
+    const rows = s.tools.map(t => `
+      <tr>
+        <td class="mono small">${escapeHtml(t.name)}</td>
+        <td class="small">${escapeHtml(t.description)}</td>
+      </tr>`).join('');
+    $('mcp-tools-table').querySelector('tbody').innerHTML = rows;
+  }
+
+  // Setup snippets — only useful if enabled
+  if (s.enabled) {
+    $('mcp-setup-card').style.display = '';
+    // Choose URL based on scope: LAN-only shows local, public shows external if available.
+    const urlForClient = s.scope === 'lan-only' ? s.mcpUrl : (s.externalUrl || s.mcpUrl);
+    $('mcp-setup-url-hint').textContent = urlForClient;
+
+    const cliCmd = `claude mcp add myvideo \\\n  --transport http \\\n  --header "Authorization: Bearer DEIN_TOKEN" \\\n  ${urlForClient}`;
+    $('mcp-cmd-claude-code').textContent = cliCmd;
+
+    const desktopJson = JSON.stringify({
+      mcpServers: {
+        myvideo: {
+          command: 'npx',
+          args: [
+            'mcp-remote',
+            urlForClient,
+            '--header',
+            'Authorization: Bearer DEIN_TOKEN',
+          ],
+        },
+      },
+    }, null, 2);
+    $('mcp-cmd-claude-desktop').textContent = desktopJson;
+  }
+}
 
 // On load
 loadOverview();
