@@ -2,7 +2,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { Playlists, extractPlaylistId } = require('../lib/youtube/playlists');
+const { Playlists, extractPlaylistId, sortByUploadDateDesc } = require('../lib/youtube/playlists');
 
 let passed = 0, failed = 0;
 function assert(c, m) { if (c) { console.log(`  ✓ ${m}`); passed++; } else { console.error(`  ✗ ${m}`); failed++; } }
@@ -93,6 +93,82 @@ function tmp() { return path.join(os.tmpdir(), `yt-pl.${Date.now()}.${Math.rando
   assert(pr.remove(x.id) === true, 'remove existing returns true');
   assert(pr.list().length === 0, 'count 0 after remove');
   assert(pr.remove('nope') === false, 'remove missing returns false');
+
+  console.log('\n--- load(): re-sorts existing (pre-sort-feature) data ---');
+  const oldFile = tmp();
+  fs.writeFileSync(oldFile, JSON.stringify({
+    version: 1,
+    playlists: [{
+      id: 'p1',
+      label: 'Old',
+      slug: 'old',
+      playlistId: 'PLold',
+      videos: [
+        { videoId: 'oldest',  uploadDate: '20200101', title: 'Oldest' },
+        { videoId: 'middle',  uploadDate: '20230101', title: 'Middle' },
+        { videoId: 'newest',  uploadDate: '20260516', title: 'Newest' },
+      ],
+    }],
+  }));
+  const ploaded = new Playlists();
+  ploaded.load(oldFile);
+  const loadedVideos = ploaded.list()[0].videos;
+  assert(loadedVideos.map(v => v.videoId).join(',') === 'newest,middle,oldest',
+    `loaded + re-sorted (got: ${loadedVideos.map(v => v.videoId).join(',')})`);
+  fs.unlinkSync(oldFile);
+
+  console.log('\n--- sortByUploadDateDesc ---');
+  const sorted = sortByUploadDateDesc([
+    { videoId: 'a', uploadDate: '20240101' },
+    { videoId: 'b', uploadDate: '20260514' },
+    { videoId: 'c', uploadDate: '20250630' },
+  ]);
+  assert(sorted.map(v => v.videoId).join(',') === 'b,c,a',
+    `newest first (got: ${sorted.map(v => v.videoId).join(',')})`);
+
+  const withMissing = sortByUploadDateDesc([
+    { videoId: 'old', uploadDate: '20200101' },
+    { videoId: 'missing', uploadDate: '' },
+    { videoId: 'new', uploadDate: '20260514' },
+    { videoId: 'undef' },  // no uploadDate field at all
+  ]);
+  assert(withMissing.map(v => v.videoId).join(',') === 'new,old,missing,undef',
+    `missing dates to end (got: ${withMissing.map(v => v.videoId).join(',')})`);
+
+  // Verify input is not mutated
+  const input = [{ videoId: 'a', uploadDate: '20200101' }, { videoId: 'b', uploadDate: '20260101' }];
+  sortByUploadDateDesc(input);
+  assert(input[0].videoId === 'a', 'sort does not mutate input');
+
+  console.log('\n--- updateVideos persists sorted order (newest first) ---');
+  const psort = new Playlists();
+  psort.file = tmp();
+  const psDemo = psort.add({ url: 'PLsortdemo12345678', label: 'Sort Demo' });
+  // YouTube delivered in playlist order (typically old → new); we expect
+  // it to be flipped on persistence.
+  psort.updateVideos(psDemo.id, [
+    { videoId: 'old',   uploadDate: '20240101', title: 'Old' },
+    { videoId: 'mid',   uploadDate: '20250101', title: 'Mid' },
+    { videoId: 'newest',uploadDate: '20260516', title: 'Newest' },
+    { videoId: 'undated', uploadDate: '',       title: 'No date' },
+  ]);
+  const persisted = psort.findById(psDemo.id).videos;
+  assert(persisted.map(v => v.videoId).join(',') === 'newest,mid,old,undated',
+    `persisted order (got: ${persisted.map(v => v.videoId).join(',')})`);
+
+  console.log('\n--- updateVideos: re-crawl preserves download flag on sorted items ---');
+  psort.markDownloaded(psDemo.id, 'old', '/data/youtube/sort-demo/old.mp4');
+  // Re-crawl with the same set + a newer one added
+  psort.updateVideos(psDemo.id, [
+    { videoId: 'old',     uploadDate: '20240101', title: 'Old' },
+    { videoId: 'newest',  uploadDate: '20260516', title: 'Newest' },
+    { videoId: 'reallynew', uploadDate: '20260520', title: 'Really new' },
+  ]);
+  const after = psort.findById(psDemo.id).videos;
+  assert(after.map(v => v.videoId).join(',') === 'reallynew,newest,old',
+    `re-crawl sorted (got: ${after.map(v => v.videoId).join(',')})`);
+  const oldItem = after.find(v => v.videoId === 'old');
+  assert(oldItem.downloaded === true, 'old still marked downloaded after re-crawl + re-sort');
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
